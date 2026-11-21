@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ideafinder.settings import get_settings
 from ideafinder.status import get_status
+from ideafinder.web.routes import briefings as briefing_routes
 from ideafinder.web.routes import eval as eval_routes
 from ideafinder.web.routes import ideas as idea_routes
 from ideafinder.web.routes import settings as settings_routes
@@ -16,6 +17,7 @@ from ideafinder.web.templating import templates
 app = FastAPI(title="SaaS Idea Finder", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(idea_routes.router)
+app.include_router(briefing_routes.router)
 app.include_router(settings_routes.router)
 app.include_router(eval_routes.router)
 

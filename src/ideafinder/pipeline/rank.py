@@ -1,5 +1,5 @@
-"""The daily ranking run: score → re-check fit → publish → resurface → summarise → propose →
-snapshot."""
+"""The daily ranking run: score → re-check fit → publish → resurface → summarise → map industries
+→ propose → mark Briefings Stale → snapshot."""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ideafinder.config import ScoringConfig
 from ideafinder.llm import LLM
+from ideafinder.pipeline.briefing import mark_stale
 from ideafinder.pipeline.fit import get_profile
+from ideafinder.pipeline.industry import map_industries
 from ideafinder.pipeline.propose import ProposeReport, propose_missing
 from ideafinder.pipeline.publish import PublishReport, publish_ready
 from ideafinder.pipeline.resurface import RefitReport, refit, resurface_on_evidence
@@ -25,6 +27,8 @@ class RankReport:
     resurfaced: list[int]
     summaries: SummaryReport
     propose: ProposeReport
+    industries_mapped: int
+    stale_briefings: list[int]
     snapshots: int
 
 
@@ -40,7 +44,9 @@ async def rank(
     if refitted.checked or published.published:
         evidence = await score_ideas(session, config, now=now)  # fit checks changed some scores
     summaries = await summarize_pending(session, llm, config.stale, evidence)
+    industries = await map_industries(session, llm)
     proposed = await propose_missing(session, llm, profile)
+    stale = await mark_stale(session, config.stale, evidence)
     snapshots = await snapshot_week(session, now)
     return RankReport(
         scored=len(evidence),
@@ -50,5 +56,7 @@ async def rank(
         resurfaced=resurfaced,
         summaries=summaries,
         propose=proposed,
+        industries_mapped=industries,
+        stale_briefings=stale,
         snapshots=snapshots,
     )

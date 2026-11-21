@@ -21,6 +21,7 @@ from ideafinder.db.models import (
     ProposedDecision,
     SignalCompetitor,
 )
+from ideafinder.pipeline.briefing import latest
 from ideafinder.settings import get_settings
 from ideafinder.web.templating import REASON_LABELS, templates, with_message
 
@@ -340,6 +341,8 @@ async def idea_page(request: Request, idea_id: int) -> HTMLResponse:
             )
         ).all()
         trend = [s.score for s in snapshots if s.score is not None]
+        briefing_done = await latest(session, idea_id, "complete")
+        briefing_waiting = await latest(session, idea_id, "awaiting_response")
         return await render(
             request,
             session,
@@ -350,6 +353,8 @@ async def idea_page(request: Request, idea_id: int) -> HTMLResponse:
             snapshots=snapshots,
             trend=sparkline(trend),
             targets=await merge_targets(session, exclude=idea_id),
+            briefing_done=briefing_done,
+            briefing_waiting=briefing_waiting,
         )
 
 

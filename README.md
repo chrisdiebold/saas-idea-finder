@@ -46,7 +46,14 @@ uv run ideafinder rank                     # score, check fit, publish to the In
 uv run ideafinder ideas list --state inbox
 uv run ideafinder ideas show ID
 uv run ideafinder ideas review ID working  # or: archive --reason too_competitive / restore
+uv run ideafinder census load              # US business counts for market math (once a year)
+uv run ideafinder brief export ID --out prompt.md   # Briefing prompt to paste into claude.ai
+uv run ideafinder brief import ID reply.md          # check and store the reply
 ```
+
+Briefings are written by hand for now: moving an Idea to the Working List (or **Generate
+briefing** on its page) prepares a prompt; paste it into claude.ai with web search on, then paste
+the reply back on the Idea's Briefing page.
 
 Other commands: `ideafinder web` (web app only), `ideafinder worker [--queue collect|model]` (workers only),
 `ideafinder db status`, `ideafinder db revision -m "..."`.

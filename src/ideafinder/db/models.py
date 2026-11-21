@@ -191,6 +191,9 @@ class Idea(Base):
     summary_signal_count: Mapped[int | None]
     summary_community_ids: Mapped[list[Any] | None]
     notes_md: Mapped[str | None] = mapped_column(Text)  # yours
+    # US industry codes (NAICS) for the Persona, for market math. None = not mapped yet;
+    # [] = mapped, but the Persona isn't tied to an industry.
+    industry_codes: Mapped[list[Any] | None]
 
 
 class IdeaSignal(Base):
@@ -292,6 +295,54 @@ class IdeaSnapshot(Base):
     author_count: Mapped[int]
     community_count: Mapped[int]
     score: Mapped[float | None]
+
+
+class IdeaCompetitor(Base):
+    """A Competitor a Briefing named for an Idea (ones named in Signals link via the Signals)."""
+
+    __tablename__ = "idea_competitors"
+
+    idea_id: Mapped[int] = mapped_column(
+        ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
+    )
+    competitor_id: Mapped[int] = mapped_column(
+        ForeignKey("competitors.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class Briefing(Base):
+    """A written analysis of an Idea (PLAN.md §4). Each generation is a new version."""
+
+    __tablename__ = "briefings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    version: Mapped[int]
+    status: Mapped[str] = mapped_column(String(24))  # awaiting_response / complete
+    stale: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    provider: Mapped[str] = mapped_column(String(16))  # manual / anthropic
+    format_version: Mapped[int]
+    prompt_text: Mapped[str] = mapped_column(Text)
+    frontmatter: Mapped[dict[str, Any] | None]
+    content_md: Mapped[str | None] = mapped_column(Text)
+    raw_response: Mapped[str | None] = mapped_column(Text)
+    warnings: Mapped[list[Any]] = mapped_column(server_default="[]")
+    signal_count_at_gen: Mapped[int | None]
+    community_ids_at_gen: Mapped[list[Any]] = mapped_column(server_default="[]")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class MarketStat(Base):
+    """US business counts per industry (Census County Business Patterns), for market math."""
+
+    __tablename__ = "market_stats"
+
+    naics_code: Mapped[str] = mapped_column(String(6), primary_key=True)  # 2-6 digits
+    year: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    label: Mapped[str] = mapped_column(Text)
+    establishments: Mapped[int]
+    geography: Mapped[str] = mapped_column(String(8), server_default="US")
 
 
 class EvalItem(Base):

@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ideafinder.config import ClusteringRules
 from ideafinder.db.models import (
+    Briefing,
     Idea,
     IdeaRelation,
     IdeaReview,
@@ -406,6 +407,9 @@ async def merge(
     source.merged_into_id = target_id
     await close_pending_proposals(session, source_id, "superseded")
     record(session, target, "merged", None, note=f"#{source_id} {source.title} merged in")
+    await session.execute(  # its evidence just changed, so its Briefing is out of date
+        update(Briefing).where(Briefing.idea_id == target_id).values(stale=True)
+    )
     await session.flush()
     await refresh_ideas(session, [target_id])
     await link_related(session, target_id, rules)

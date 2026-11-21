@@ -46,7 +46,10 @@ async def session(use_settings, test_database_url):
     engine = create_engine(settings.sqlalchemy_url)
     with engine.begin() as conn:
         conn.execute(
-            text("TRUNCATE fit_profile, ideas, signals, items, communities, sources CASCADE")
+            text(
+                "TRUNCATE fit_profile, ideas, signals, items, communities, sources, competitors,"
+                " market_stats CASCADE"
+            )
         )
     engine.dispose()
     async with get_sessionmaker()() as s:

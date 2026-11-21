@@ -87,4 +87,16 @@ async def review(
         idea.state, idea.archive_reason = "inbox", None
         record(session, idea, "restored", evidence, note=note)
     await session.commit()
+    if to == "working":
+        await prepare_briefing(session, idea, evidence)
     return idea
+
+
+async def prepare_briefing(session: AsyncSession, idea: Idea, evidence) -> None:
+    """Moving to the Working List is when a Briefing is wanted (PLAN.md §4). With the manual
+    provider that means a prompt waiting for you; nothing is sent anywhere."""
+    from ideafinder.pipeline import briefing
+    from ideafinder.pipeline.fit import get_profile
+
+    if await briefing.latest(session, idea.id) is None:
+        await briefing.request(session, idea, await get_profile(session), evidence)

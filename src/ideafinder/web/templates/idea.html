@@ -36,11 +36,27 @@
   {{ m.actions(idea, d.proposal, here_path) }}
   {% endif %}
 
+  <h2>Briefing</h2>
+  {% if briefing_done %}
+    {% set fm = briefing_done.frontmatter %}
+    <p><strong>{{ {"pursue": "Pursue", "maybe": "Maybe", "skip": "Skip"}[fm.verdict] }}</strong>,
+      confidence {{ fm.confidence }} of 5.
+      {% if briefing_done.stale %}<span class="tag aside">Stale</span>{% endif %}
+      <a href="/ideas/{{ idea.id }}/briefing">Read the Briefing</a>{% if briefing_waiting %}; a new version is waiting for a reply{% endif %}.</p>
+  {% elif briefing_waiting %}
+    <p>The prompt is ready. <a href="/ideas/{{ idea.id }}/briefing">Copy it and paste the reply</a>.</p>
+  {% elif not idea.merged_into_id %}
+    <form method="post" action="/ideas/{{ idea.id }}/briefing/generate">
+      <button>Generate briefing</button>
+      <span class="small muted">Researches competitors, market size, reach and build effort, and argues the case against.</span>
+    </form>
+  {% endif %}
+
   <h2>Evidence <span class="muted" style="font-weight: 400">{{ d.signals | length }} Signals</span></h2>
   {% if d.signals %}
   <form method="post" action="/ideas/{{ idea.id }}/split">
     {% for s in d.signals %}
-    <div class="signal">
+    <div class="signal" id="signal-{{ s.signal.id }}">
       <input type="checkbox" name="signal_ids" value="{{ s.signal.id }}" id="s{{ s.signal.id }}" aria-label="Select for splitting">
       <div>
         <label for="s{{ s.signal.id }}" class="about"><span class="tag">{{ s.signal.kind | capitalize }}</span> {{ s.signal.problem_statement }}</label>

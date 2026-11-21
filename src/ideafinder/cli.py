@@ -524,6 +524,110 @@ def fit_load(
     typer.echo(f"Fit profile saved (version {profile.version}).")
 
 
+census_app = typer.Typer(no_args_is_help=True, help="US business counts for market math.")
+app.add_typer(census_app, name="census")
+
+
+@census_app.command("load")
+def census_load(
+    year: Annotated[int, typer.Option(help="County Business Patterns year.")] = 2023,
+) -> None:
+    """Download County Business Patterns (no API key needed) and store counts per industry."""
+    from ideafinder.pipeline.census import download, parse, store
+
+    _require_ready()
+
+    async def run() -> int:
+        us_file, names = await download(year)
+        rows = parse(us_file, names)
+        return await _ideas_session_async(lambda s: store(s, rows, year))
+
+    typer.echo(f"Stored US business counts for {asyncio.run(run()):,} industries ({year}).")
+
+
+async def _ideas_session_async(fn):
+    from ideafinder.db.engine import get_sessionmaker
+
+    async with get_sessionmaker()() as session:
+        return await fn(session)
+
+
+brief_app = typer.Typer(
+    no_args_is_help=True, help="Briefings by hand: export the prompt, import the reply."
+)
+app.add_typer(brief_app, name="brief")
+
+
+@brief_app.command("export")
+def brief_export(
+    idea_id: Annotated[int, typer.Argument(help="Idea id.")],
+    out: Annotated[
+        Path | None, typer.Option(help="Write to this file instead of printing.")
+    ] = None,
+) -> None:
+    """Prepare the Briefing prompt for an Idea (maps its industry first if needed) and print it."""
+    from ideafinder.config import load_config
+    from ideafinder.db.models import Idea
+    from ideafinder.llm import LLM, ModelUnavailable
+    from ideafinder.pipeline import briefing
+    from ideafinder.pipeline.fit import get_profile
+    from ideafinder.pipeline.industry import latest_year, map_industry
+    from ideafinder.pipeline.score import gather_evidence
+
+    _require_ready()
+    config = load_config(get_settings().config_dir)
+
+    async def run(session):
+        idea = await session.get(Idea, idea_id)
+        if idea is None:
+            raise typer.BadParameter(f"there's no Idea {idea_id}")
+        if idea.industry_codes is None and await latest_year(session):
+            try:
+                async with LLM(config.models) as llm:
+                    await map_industry(session, llm, idea)
+                await session.commit()
+            except ModelUnavailable as exc:
+                typer.secho(f"! Couldn't map the industry ({exc}); continuing without.", err=True)
+                await session.rollback()
+        e = (await gather_evidence(session, config.scoring, [idea_id])).get(idea_id)
+        return await briefing.request(session, idea, await get_profile(session), e)
+
+    b = _ideas_session(run)
+    if out:
+        out.write_text(b.prompt_text)
+        typer.echo(f"Wrote the prompt for idea-{idea_id} (version {b.version}) to {out}")
+    else:
+        typer.echo(b.prompt_text)
+
+
+@brief_app.command("import")
+def brief_import(
+    idea_id: Annotated[int, typer.Argument(help="Idea id.")],
+    path: Annotated[Path, typer.Argument(help="File with the reply (Markdown + frontmatter).")],
+) -> None:
+    """Check a Briefing reply and store it."""
+    from ideafinder.pipeline import briefing
+
+    _require_ready()
+    raw = path.read_text()
+    try:
+        stored, parsed = _ideas_session(lambda s: briefing.accept_reply(s, idea_id, raw))
+    except briefing.BriefingError as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    for w in parsed.warnings:
+        typer.secho(f"! {w}", fg="yellow")
+    if stored is None:
+        for e in parsed.errors:
+            typer.secho(f"✗ {e}", fg="red", err=True)
+        raise typer.Exit(1)
+    fm = parsed.frontmatter
+    typer.echo(
+        f"Stored Briefing version {stored.version} for idea-{idea_id}: "
+        f"{fm.verdict} (confidence {fm.confidence}/5)."
+    )
+
+
 eval_app = typer.Typer(no_args_is_help=True, help="The extraction test set (pick the local model).")
 app.add_typer(eval_app, name="eval")
 

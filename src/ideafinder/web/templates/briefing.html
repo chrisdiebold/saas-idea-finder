@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Briefing: {{ idea.title }} · Idea Finder{% endblock %}
+{% block head %}
+{% include "_ideas_css.html" %}
+<style>
+  .doc { max-width: 70ch; }
+  .doc h2 { margin-top: 34px; }
+  .doc p, .doc li { line-height: 1.6; }
+  .doc blockquote { font-family: var(--voice); font-size: 16px; margin: 10px 0; padding-left: 14px;
+                    border-left: 2px solid var(--mark); }
+  .doc table { border-collapse: collapse; font-size: 14px; }
+  .doc th, .doc td { border-bottom: 1px solid var(--rule); padding: 5px 10px 5px 0; text-align: left; }
+  .claim { font-size: 11px; padding: 0 4px; margin-left: 2px; border-radius: 3px; white-space: nowrap;
+           text-decoration: none; vertical-align: 1px; }
+  .claim.evidence { color: var(--go); background: #E6F0EC; }
+  .claim.researched { color: var(--ink); background: #E9ECEB; }
+  .claim.assumption { color: var(--aside); background: #F6EBDC; }
+  .against { border-left: 3px solid var(--aside); padding: 2px 0 6px 18px; margin: 34px 0 0 -21px; }
+  .against h2 { margin-top: 8px; color: var(--aside); }
+  .verdict-line { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; margin: 8px 0 22px; }
+  .verdict-word { font-size: 22px; font-weight: 650; }
+  .verdict-word.pursue { color: var(--go); } .verdict-word.skip { color: var(--aside); }
+  .steps { max-width: 760px; }
+  .steps ol { padding-left: 20px; }
+  .steps textarea { font: 12.5px/1.45 ui-monospace, Menlo, monospace; background: #FBFCFB; }
+  .facts-list { list-style: none; padding: 0; margin: 0; }
+  .facts-list li { padding: 5px 0; border-bottom: 1px solid var(--rule); }
+  .problems-list { color: var(--bad); }
+</style>
+{% endblock %}
+{% block content %}
+<p class="small muted"><a href="/ideas/{{ idea.id }}">{{ idea.title }}</a></p>
+<h1>Briefing</h1>
+
+{% if parsed %}
+<div class="flash error" role="alert">
+  <strong>The reply wasn't saved.</strong> Fix these and check it again; your paste is kept below.
+  <ul class="problems-list">{% for e in parsed.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if waiting %}
+<section class="steps" aria-labelledby="steps-h">
+  <h2 id="steps-h">{% if done %}A new version is waiting for a reply{% else %}Get this Briefing written{% endif %}</h2>
+  <ol>
+    <li>Copy the prompt. It holds the evidence, your Fit profile, US market data and the exact format.</li>
+    <li>Paste it into claude.ai with web search turned on, and copy the whole reply.</li>
+    <li>Paste the reply below. It's checked before anything is saved.</li>
+  </ol>
+  <p><button type="button" class="go" id="copy">Copy prompt</button>
+     <span class="small muted" id="copied" role="status"></span></p>
+  <details>
+    <summary class="small muted">Show the prompt ({{ "{:,}".format(waiting.prompt_text | length) }} characters)</summary>
+    <textarea id="prompt" rows="14" readonly>{{ waiting.prompt_text }}</textarea>
+  </details>
+  <form method="post" action="/ideas/{{ idea.id }}/briefing/reply" style="margin-top: 16px">
+    <label for="response"><strong>The reply</strong></label>
+    <textarea id="response" name="response" rows="10" required placeholder="---
+briefing_for: idea-{{ idea.id }}
+...">{{ paste }}</textarea>
+    <p style="margin-top: 8px"><button class="go">Check and save reply</button></p>
+  </form>
+  <p class="small muted">Or from a terminal: <code>ideafinder brief export {{ idea.id }}</code> and
+    <code>ideafinder brief import {{ idea.id }} reply.md</code>.</p>
+</section>
+{% endif %}
+
+{% if done %}
+  {% set fm = done.frontmatter %}
+  <div class="verdict-line">
+    <span class="verdict-word {{ fm.verdict }}">{{ {"pursue": "Pursue", "maybe": "Maybe", "skip": "Skip"}[fm.verdict] }}</span>
+    <span class="muted">confidence {{ fm.confidence }} of 5</span>
+    <span class="muted">version {{ done.version }}, {{ done.completed_at.strftime("%-d %b %Y") }}</span>
+    {% if done.stale %}<span class="tag aside" title="The Idea gained a lot of evidence since this was written">Stale</span>{% endif %}
+  </div>
+  {% if done.stale %}
+  <p class="flash error">This Briefing is Stale: the Idea has gained a lot of new evidence since it was
+    written. It's never rewritten on its own; generate a new version when you want one.</p>
+  {% endif %}
+  {% for w in done.warnings %}<p class="flash error">{{ w }}</p>{% endfor %}
+
+  <div class="detail">
+    <article class="doc">{{ body }}</article>
+    <aside class="rail" aria-label="Key numbers">
+      <h3>Market math, US businesses</h3>
+      {% set mm = fm.market_math %}
+      <ul class="facts-list">
+        <li>{{ "{:,}".format(mm.us_businesses) if mm.us_businesses else "Unknown number of" }} US businesses</li>
+        <li>${{ "{:,.0f}".format(mm.price_usd) }} a month each</li>
+        <li>{{ "{:,}".format(mm.customers_needed) }} customers for your revenue goal</li>
+        {% if mm.share_pct is not none %}<li>{{ mm.share_pct }}% of the market</li>{% endif %}
+      </ul>
+      <h3>Pricing hypothesis</h3>
+      <p>${{ "{:,.0f}".format(fm.pricing_hypothesis.low_usd) }}–{{ "{:,.0f}".format(fm.pricing_hypothesis.high_usd) }}, {{ fm.pricing_hypothesis.model | replace("_", " ") }}</p>
+      <h3>Build</h3>
+      <p>{{ fm.weeks_to_mvp | round(1) | string | replace(".0", "") }} weeks to an MVP</p>
+      {% if fm.integrations %}
+      <ul class="facts-list">{% for i in fm.integrations %}
+        <li>{{ i.name }} <span class="small muted">{{ {"open": "open API", "approval": "needs approval", "partner_only": "partners only"}[i.api_access] }}</span></li>
+      {% endfor %}</ul>
+      {% endif %}
+      {% if fm.competitors %}
+      <h3>Competitors</h3>
+      <ul class="facts-list">{% for c in fm.competitors %}
+        <li>{% if c.url %}<a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}
+          {% if c.pricing %}<br><span class="small muted">{{ c.pricing }}</span>{% endif %}</li>
+      {% endfor %}</ul>
+      {% endif %}
+      <h3>Riskiest assumptions</h3>
+      <ul class="facts-list">{% for a in fm.assumptions[:3] %}
+        <li>{{ a.claim }}<br><span class="small muted">risk {{ a.risk }} of 5, evidence: {{ a.evidence }}</span></li>
+      {% endfor %}</ul>
+      {% if not waiting %}
+      <form method="post" action="/ideas/{{ idea.id }}/briefing/generate" style="margin-top: 22px">
+        <button>Generate a new version</button>
+      </form>
+      {% endif %}
+    </aside>
+  </div>
+{% elif not waiting %}
+  <p class="lede">No Briefing yet. A Briefing researches competitors, market size, how to reach
+    customers and what it would take to build, and argues the case against.</p>
+  <form method="post" action="/ideas/{{ idea.id }}/briefing/generate"><button class="go">Generate briefing</button></form>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+  document.getElementById("copy")?.addEventListener("click", async () => {
+    const text = document.getElementById("prompt").value;
+    const status = document.getElementById("copied");
+    try { await navigator.clipboard.writeText(text); status.textContent = "Copied. Paste it into claude.ai."; }
+    catch { document.querySelector("details").open = true; document.getElementById("prompt").select();
+            status.textContent = "Select-all is ready; press ⌘C to copy."; }
+  });
+</script>
+{% endblock %}
