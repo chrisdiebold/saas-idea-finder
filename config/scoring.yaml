@@ -1,0 +1,30 @@
+# Scoring weights and thresholds. See PLAN.md §3. Weights must sum to 1.0.
+
+weights:
+  volume: 0.20
+  spread: 0.20
+  intensity: 0.10
+  payment: 0.15
+  momentum: 0.10
+  competitive_gap: 0.10
+  fit: 0.10
+  solo_buildable: 0.05
+
+thread_cap: 5   # max Signals one Thread contributes to an Idea's volume
+
+publish:        # when an Incubating Idea reaches the Inbox
+  min_authors: 5
+  min_communities: 2
+  require_pain_or_request: true
+
+resurface:      # when an archived Idea returns to the Inbox (evidence-based Archive reasons only)
+  momentum_multiplier: 3.0
+  on_new_community: true
+
+stale:          # when a Briefing is marked Stale
+  signal_growth_pct: 50
+  on_new_community: true
+
+validation:
+  time_limit_days: 14
+  active_limit: 3

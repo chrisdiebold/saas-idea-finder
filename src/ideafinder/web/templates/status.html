@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>SaaS Idea Finder</h1>
+<p class="sub">System status. The Inbox, Working List and Archive arrive in milestone M5.</p>
+
+{% if status.problems %}
+<div class="problems">
+  <strong class="bad">Needs attention</strong>
+  <ul>{% for p in status.problems %}<li>{{ p }}</li>{% endfor %}</ul>
+</div>
+{% else %}
+<p class="ok">Everything is running.</p>
+{% endif %}
+
+<h2>Database</h2>
+<table>
+  {% set db = status.database %}
+  <tr><td>Postgres</td><td>{% if db.reachable %}<span class="ok">reachable</span>, version {{ db.server_version }}{% else %}<span class="bad">not reachable</span>{% endif %}</td></tr>
+  <tr><td>pgvector</td><td>{{ db.pgvector_version or "not installed" }}</td></tr>
+  <tr><td>Migrations</td><td>{% if db.up_to_date %}<span class="ok">up to date</span> ({{ db.current_revision }}){% else %}<span class="bad">at {{ db.current_revision or "none" }}, latest is {{ db.head_revision }}</span>{% endif %}</td></tr>
+</table>
+
+<h2>Workers</h2>
+<table>
+  {% for q in status.queues %}
+  <tr><td><code>{{ q.queue }}</code> queue</td>
+      <td>{% if q.alive %}<span class="ok">running</span>{% elif q.last_seen %}<span class="bad">last seen {{ q.last_seen.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="bad">never seen</span>{% endif %}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Sources</h2>
+<table>
+  {% if status.config %}
+    {% for s in status.config.sources.sources %}
+    <tr><td>{{ s.name }}</td><td>Phase {{ s.phase }}, {{ "enabled" if s.enabled else "disabled" }}, {{ s.communities | length }} Watch-listed Communities</td></tr>
+    {% endfor %}
+  {% else %}
+    <tr><td>Config</td><td class="bad">invalid</td></tr>
+  {% endif %}
+</table>
+{% endblock %}

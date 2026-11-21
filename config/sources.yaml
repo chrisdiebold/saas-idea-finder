@@ -1,0 +1,39 @@
+# Sources and their Watch lists. See PLAN.md §1 and docs/research/source-access.md.
+# Only Sources that pass the access rule belong here (official API / RSS / public JSON / plain HTML,
+# no login, no bot protection, allowed by terms of service and robots.txt).
+
+language: en
+backfill_months: 12
+
+# Pain-phrase queries, run by every Source that supports search.
+queries:
+  request: ["is there a tool", "is there an app", "I wish there was", "looking for software"]
+  payment: ["I'd pay for", "happy to pay", "take my money"]
+  workaround: ["we use a spreadsheet", "manually every", "copy and paste between"]
+  complaint: ["alternative to", "switching from", "so frustrated with", "overpriced"]
+  question: ["how do you guys handle", "what do you use for"]
+
+sources:
+  - key: hackernews
+    name: Hacker News
+    phase: 1
+    rate_limit_per_minute: 60   # Algolia allows 10k requests/hour per IP
+    communities: []             # Hacker News is a single Community
+
+  - key: jira_atlassian
+    name: Atlassian public Jira
+    phase: 1
+    rate_limit_per_minute: 30   # not documented; stay polite
+    communities: [JRACLOUD, CONFCLOUD, JSWCLOUD]   # project keys; verify in M1
+
+  - key: wordpress
+    name: WordPress.org
+    phase: 1
+    rate_limit_per_minute: 30
+    communities: [woocommerce, contact-form-7, elementor, wordpress-seo]   # plugin slugs
+
+  - key: stackexchange
+    name: Stack Exchange
+    phase: 1
+    rate_limit_per_minute: 30   # 10k requests/day with a key
+    communities: [softwarerecs, webapps, superuser]   # site names

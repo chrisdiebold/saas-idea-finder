@@ -1,0 +1,19 @@
+# Which provider and model handles each task. See PLAN.md §2 (LLM routing).
+# The local model is chosen by the M2 eval; until then `model` is left empty.
+
+providers:
+  ollama:
+    base_url: http://localhost:11434/v1
+  anthropic: {}   # needs ANTHROPIC_API_KEY; not used yet
+  manual: {}      # copy-paste through claude.ai
+
+tasks:
+  extract:          {provider: ollama}
+  name_idea:        {provider: ollama}
+  fit_check:        {provider: ollama}
+  propose_decision: {provider: ollama}
+  summary:          {provider: ollama}
+  industry_codes:   {provider: ollama}
+  lead_opener:      {provider: ollama}
+  validation_kit:   {provider: ollama}
+  briefing:         {provider: manual}
