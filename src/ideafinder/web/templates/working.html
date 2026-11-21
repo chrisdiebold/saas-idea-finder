@@ -1,24 +1,89 @@
 {% extends "base.html" %}
 {% import "_macros.html" as m %}
 {% block title %}Working List · Idea Finder{% endblock %}
-{% block head %}{% include "_ideas_css.html" %}{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% include "_validation_css.html" %}{% endblock %}
 {% block content %}
 <h1>Working List</h1>
-{% if ideas %}
-<p class="lede">Ideas you've chosen to pursue. Stages, time limits and experiments arrive with the
-validation tools.</p>
-<ul class="rows">
-  {% for idea in ideas %}
+{% set n_active = active | length %}
+<p class="lede">{{ n_active }} of {{ active_limit }} active{% if paused %}, {{ paused | length }} paused{% endif %}.
+  Order comes from Head-to-heads: the first Idea is the one that deserves your time next.</p>
+
+{% if pending or kills or expired %}
+<section class="decide-now" aria-labelledby="now-h">
+  <h2 id="now-h">Decide now</h2>
+  <ul class="pinned">
+    {% for p in pending %}
+    <li>
+      <strong>{{ "The list is full" if p.trigger == "full_list" else "Which comes first?" }}</strong>
+      {{ titles[p.idea_a] }} or {{ titles[p.idea_b] }}.
+      <a class="button" href="/head-to-head/{{ p.id }}">Compare</a>
+    </li>
+    {% endfor %}
+    {% for d, idea in kills %}
+    <li>
+      <strong>Kill criteria met:</strong> <a href="/ideas/{{ idea.id }}/validation">{{ idea.title }}</a>.
+      <span class="muted">{{ d.rationale }}</span>
+      <span class="actions">
+        <form method="post" action="/ideas/{{ idea.id }}/confirm"><input type="hidden" name="back" value="/working">
+          <button class="aside">Confirm: archive as dropped after research</button></form>
+      </span>
+    </li>
+    {% endfor %}
+    {% for idea, w in expired %}
+    <li>
+      <strong>Time limit reached:</strong> <a href="/ideas/{{ idea.id }}/validation">{{ idea.title }}</a>,
+      {{ stage_labels[w.stage] | lower }} since {{ w.stage_started_at.strftime("%-d %b") }}.
+      <span class="actions">
+        {% for action, label, cls in ([("extend", "Extend once", "")] if not w.extended_in_stage else []) + [("pause", "Pause", ""), ("drop", "Drop", "aside")] %}
+        <form method="post" action="/ideas/{{ idea.id }}/stage"><input type="hidden" name="action" value="{{ action }}">
+          <input type="hidden" name="back" value="/working"><button class="{{ cls }}">{{ label }}</button></form>
+        {% endfor %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if active %}
+<ol class="worklist">
+  {% for idea, w in active %}
+  {% set h = hypotheses[idea.id] %}{% set e = last_experiment[idea.id] %}
+  {% set left = (deadline(w) - now).days %}
   <li>
-    <a href="/ideas/{{ idea.id }}"><strong>{{ idea.title }}</strong></a>
-    {% if idea.seeded %}<span class="tag">Added by you</span>{% else %}<span></span>{% endif %}
-    <span class="num">{{ idea.score | round | int if idea.score is not none else "" }}</span>
-    <span class="sub">For {{ idea.persona }}. {{ m.counts(idea) }}</span>
+    <div class="wl-head">
+      <a class="entry-title" href="/ideas/{{ idea.id }}/validation">{{ idea.title }}</a>
+      <span class="stage stage-{{ w.stage }}">{{ stage_labels[w.stage] }}</span>
+      <span class="clock {% if left < 0 %}over{% elif left < 3 %}soon{% endif %}">
+        {% if left < 0 %}over by {{ -left }} day{{ "s" if -left != 1 }}{% else %}{{ left }} day{{ "s" if left != 1 }} left{% endif %}
+      </span>
+    </div>
+    <p class="wl-line">{% if h %}{{ h.statement }}{% else %}<span class="muted">No Hypothesis yet.</span>{% endif %}</p>
+    <p class="wl-meta muted small">
+      {% if e %}Latest Experiment: {{ types[e.type] | lower }}, {{ outcomes[e.outcome] | lower if e.outcome else "running" }}.{% else %}No Experiments yet.{% endif %}
+      {% set talked = lead_counts.get((idea.id, "talked"), 0) %}{% set total = lead_counts.get((idea.id, "to_contact"), 0) + lead_counts.get((idea.id, "contacted"), 0) + lead_counts.get((idea.id, "replied"), 0) + talked %}
+      {% if total %}Leads: {{ total }}, talked to {{ talked }}.{% endif %}
+      {% if idea.seeded %}Added by you.{% endif %}
+    </p>
+  </li>
+  {% endfor %}
+</ol>
+{% elif not paused %}
+<p class="lede">Nothing here yet. Move an Idea here from the <a href="/inbox">Inbox</a>, or
+<a href="/ideas/new">add one of your own</a>.</p>
+{% endif %}
+
+{% if paused %}
+<h2>Paused</h2>
+<ul class="rows">
+  {% for idea, w in paused %}
+  <li>
+    <a href="/ideas/{{ idea.id }}/validation"><strong>{{ idea.title }}</strong></a>
+    <span class="muted small">paused in {{ stage_labels[w.paused_from or "researching"] | lower }}</span>
+    <form method="post" action="/ideas/{{ idea.id }}/stage" style="margin:0"><input type="hidden" name="action" value="resume">
+      <input type="hidden" name="back" value="/working"><button class="quiet">Resume</button></form>
   </li>
   {% endfor %}
 </ul>
-{% else %}
-<p class="lede">Nothing here yet. Move an Idea here from the <a href="/inbox">Inbox</a>, or
-<a href="/ideas/new">add one of your own</a>.</p>
 {% endif %}
 {% endblock %}

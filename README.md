@@ -55,6 +55,10 @@ Briefings are written by hand for now: moving an Idea to the Working List (or **
 briefing** on its page) prepares a prompt; paste it into claude.ai with web search on, then paste
 the reply back on the Idea's Briefing page.
 
+Each Working List Idea has a **Validation** page: its Hypothesis and Kill criteria, Experiments and
+Outcomes, Leads (contacted by you, on their own posts), and the Validation kit. At most 3 Ideas
+are active; adding a fourth asks you to choose in a Head-to-head.
+
 Other commands: `ideafinder web` (web app only), `ideafinder worker [--queue collect|model]` (workers only),
 `ideafinder db status`, `ideafinder db revision -m "..."`.
 

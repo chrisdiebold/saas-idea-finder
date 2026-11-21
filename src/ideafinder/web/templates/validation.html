@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Validation: {{ idea.title }} · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% include "_validation_css.html" %}{% endblock %}
+{% block content %}
+<p class="small muted"><a href="/working">Working List</a><span aria-hidden="true">&ensp;/&ensp;</span><a href="/ideas/{{ idea.id }}">Idea and evidence</a></p>
+<h1>{{ idea.title }}</h1>
+<p class="persona">For {{ idea.persona }}.</p>
+
+{# Stage track: a real sequence, so it's drawn as one. #}
+{% set order = ["researching", "validating", "building"] %}
+{% set current = item.paused_from if item.stage == "paused" else item.stage %}
+<div class="track" aria-label="Stage">
+  {% for s in order %}
+  <span class="{% if s == current %}now{% elif order.index(s) < order.index(current) %}done{% endif %}">{{ stage_labels[s] }}</span>
+  {% endfor %}
+</div>
+<p class="small">
+  {% if item.stage == "paused" %}<strong>Paused</strong> in {{ stage_labels[current] | lower }}. It doesn't count toward the Active limit.
+  {% else %}{% set left = (deadline - now).days %}
+    Time limit: {{ deadline.strftime("%-d %b") }}
+    ({% if left < 0 %}<span class="bad">over by {{ -left }} days</span>{% else %}{{ left }} days left{% endif %}{% if item.extended_in_stage %}, already extended once{% endif %}).
+  {% endif %}
+</p>
+<div class="actions">
+  {% if item.stage in ("researching", "validating") %}
+  <form method="post" action="/ideas/{{ idea.id }}/stage"><input type="hidden" name="action" value="advance">
+    <button class="go" {% if not can_advance %}disabled title="Needs a passed Experiment in this Stage"{% endif %}>Move on to {{ stage_labels["validating" if item.stage == "researching" else "building"] }}</button></form>
+  {% endif %}
+  {% if expired and not item.extended_in_stage %}
+  <form method="post" action="/ideas/{{ idea.id }}/stage"><input type="hidden" name="action" value="extend"><button>Extend once</button></form>
+  {% endif %}
+  {% if item.stage == "paused" %}
+  <form method="post" action="/ideas/{{ idea.id }}/stage"><input type="hidden" name="action" value="resume"><button>Resume</button></form>
+  {% else %}
+  <form method="post" action="/ideas/{{ idea.id }}/stage"><input type="hidden" name="action" value="pause"><button>Pause</button></form>
+  {% endif %}
+  <form method="post" action="/ideas/{{ idea.id }}/stage"><input type="hidden" name="action" value="drop">
+    <button class="aside">Drop after research</button></form>
+  <form method="post" action="/ideas/{{ idea.id }}/time-limit">
+    <label class="small muted" for="days">Days per Stage</label>
+    <input id="days" name="days" type="number" min="1" max="365" value="{{ item.time_limit_days }}" style="width: 70px">
+    <button class="quiet">Set</button></form>
+</div>
+{% if item.stage in ("researching", "validating") and not can_advance %}
+<p class="small muted">Moving on needs a passed Experiment in {{ stage_labels[item.stage] | lower }}.</p>
+{% endif %}
+
+<h2>Hypothesis</h2>
+<form method="post" action="/ideas/{{ idea.id }}/hypothesis" class="stack">
+  <label for="statement" class="small muted">Who would pay how much to have this solved?
+    {% if hypothesis and hypothesis.source == "briefing" %}Pre-filled from the Briefing's riskiest Assumption; make it yours.{% endif %}</label>
+  <textarea id="statement" name="statement" rows="2" required placeholder="Owners of landscaping companies with 5–20 crew would pay $49 a month to stop re-texting schedules after rain.">{{ hypothesis.statement if hypothesis else "" }}</textarea>
+  <label for="kill" class="small muted">Kill criteria, set before testing: what result would make you drop it?</label>
+  <textarea id="kill" name="kill_criteria" rows="2" required placeholder="Fewer than 3 of 10 owners interviewed spent money or more than 2 hours a week on this.">{{ hypothesis.kill_criteria if hypothesis else "" }}</textarea>
+  <p><button>Save hypothesis</button></p>
+</form>
+
+<h2>Experiments</h2>
+{% for e in experiments %}
+<div class="exp">
+  <header>
+    <strong>{{ types[e.type] }}</strong>
+    <span class="small muted">{{ stage_labels[e.stage] | lower }}, started {{ e.started_at.strftime("%-d %b") }}</span>
+    {% if e.outcome %}<span class="outcome-{{ e.outcome }}">{{ outcomes[e.outcome] }}</span>{% if e.met_kill_criteria %}<span class="tag aside">met the Kill criteria</span>{% endif %}{% endif %}
+  </header>
+  <p style="white-space: pre-wrap; margin-top: 6px">{{ e.plan_md }}</p>
+  {% if talked_notes[e.id] %}
+  <p class="small muted">From Leads you talked to:</p>
+  <ul class="small">{% for lead in talked_notes[e.id] %}<li><strong>{{ lead.author }}:</strong> {{ lead.notes_md }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if e.outcome %}
+    <p class="small"><span class="muted">Evidence:</span> {{ e.evidence_md }}</p>
+  {% else %}
+  <form method="post" action="/experiments/{{ e.id }}/outcome" class="stack">
+    <label class="small muted" for="ev{{ e.id }}">Record the Outcome</label>
+    <textarea id="ev{{ e.id }}" name="evidence" rows="2" placeholder="What happened, in numbers where you can."></textarea>
+    <div class="actions">
+      <select name="outcome" aria-label="Outcome">{% for k, v in outcomes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+      <label class="small"><input type="checkbox" name="met_kill_criteria" value="yes"> This meets the Kill criteria</label>
+      <button>Save outcome</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% else %}
+<p class="muted">None yet.</p>
+{% endfor %}
+{% if item.stage != "paused" %}
+<form method="post" action="/ideas/{{ idea.id }}/experiments" class="stack" style="margin-top: 14px">
+  <h3 style="margin: 0">Start an Experiment</h3>
+  <select name="type" aria-label="Type">{% for k, v in types.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+  <textarea name="plan" rows="3" required placeholder="What you'll do, with whom, and what counts as a pass."></textarea>
+  <p><button>Start experiment</button></p>
+</form>
+{% endif %}
+
+<h2 id="leads">Leads</h2>
+<p class="small muted">People who described this problem. Reply to them yourself, on their own post; nothing is sent from here.</p>
+<form method="post" action="/ideas/{{ idea.id }}/leads/find"><button>Find Leads</button></form>
+{% for lead, quote in leads %}
+<div class="lead">
+  <div>
+    <strong>{{ lead.author }}</strong> <a class="small" href="{{ lead.url }}" target="_blank" rel="noopener">their post</a>
+    <blockquote class="voice" style="margin: 4px 0"><mark>{{ quote }}</mark></blockquote>
+    {% if lead.opener %}<p class="opener small">{{ lead.opener }}</p>{% else %}<p class="small muted">Opening line being written…</p>{% endif %}
+    {% if kit and kit.content.lead_messages.get(lead.id | string) %}
+    <details><summary class="small">Message from the Validation kit</summary><p class="opener small">{{ kit.content.lead_messages[lead.id | string] }}</p></details>
+    {% endif %}
+  </div>
+  <form method="post" action="/leads/{{ lead.id }}" class="stack">
+    <select name="status" aria-label="Status">{% for k, v in statuses.items() %}<option value="{{ k }}" {% if lead.status == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+    <textarea name="notes" rows="3" placeholder="What they told you">{{ lead.notes_md or "" }}</textarea>
+    <button class="quiet" style="justify-self: start">Save</button>
+  </form>
+</div>
+{% endfor %}
+
+<h2 id="kit">Validation kit</h2>
+{% if kit %}{% set k = kit.content %}
+<div class="kit">
+  <p class="small muted">Written {{ kit.generated_at.strftime("%-d %b %Y") }}.</p>
+  <h3>Interview script</h3>
+  <p class="small muted">Ask about what they did and paid, never whether they'd buy.</p>
+  <ol>{% for q in k.interview_script %}<li>{{ q }}</li>{% endfor %}</ol>
+  <h3>Landing page</h3>
+  <p style="font-size: 20px; font-weight: 650; margin-bottom: 2px">{{ k.landing_page.headline }}</p>
+  <p>{{ k.landing_page.subheadline }}</p>
+  <ul>{% for b in k.landing_page.bullets %}<li>{{ b }}</li>{% endfor %}</ul>
+  <p><span class="button">{{ k.landing_page.call_to_action }}</span></p>
+  <h3>{{ "Pre-sale offer" if k.offer.kind == "pre_sale" else "Waitlist offer" }}</h3>
+  <p>{{ k.offer.text }}</p>
+</div>
+<form method="post" action="/ideas/{{ idea.id }}/kit"><button class="quiet">Write a new version</button></form>
+{% else %}
+<p class="muted">Written when the Idea reaches Validating.</p>
+<form method="post" action="/ideas/{{ idea.id }}/kit"><button>Write it now</button></form>
+{% endif %}
+{% endblock %}

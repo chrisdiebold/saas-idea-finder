@@ -5,12 +5,13 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ideafinder.config import ClusteringRules
+from ideafinder.config import ClusteringRules, ValidationRules
 from ideafinder.db.models import Idea, IdeaSignal, Signal
 from ideafinder.llm import LLM
 from ideafinder.pipeline.cluster import link_related, problem_embedding, refresh_ideas, unassigned
 from ideafinder.pipeline.embed import PREFIX
 from ideafinder.pipeline.publish import record
+from ideafinder.validation.working import join
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ async def create_seeded(
     session: AsyncSession,
     llm: LLM,
     rules: ClusteringRules,
+    validation: ValidationRules,
     title: str,
     problem_statement: str,
     persona: str,
@@ -58,6 +60,7 @@ async def create_seeded(
     await refresh_ideas(session, [idea.id])
     await link_related(session, idea.id, rules)
     record(session, idea, "to_working", None, note="seeded by you")
+    await join(session, idea, validation)
     await session.commit()
     await session.refresh(idea)  # centroid and dates were recomputed in SQL
     return Seeded(idea, len(matches))

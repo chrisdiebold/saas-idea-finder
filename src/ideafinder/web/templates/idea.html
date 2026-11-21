@@ -36,6 +36,11 @@
   {{ m.actions(idea, d.proposal, here_path) }}
   {% endif %}
 
+  {% if idea.state == "working" %}
+  <p><a class="button" href="/ideas/{{ idea.id }}/validation">Open validation</a>
+    <span class="small muted">Hypothesis, Experiments, Leads and the Validation kit.</span></p>
+  {% endif %}
+
   <h2>Briefing</h2>
   {% if briefing_done %}
     {% set fm = briefing_done.frontmatter %}

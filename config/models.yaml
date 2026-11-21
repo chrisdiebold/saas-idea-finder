@@ -16,6 +16,6 @@ tasks:
   propose_decision: {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
   summary:          {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
   industry_codes:   {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
-  lead_opener:      {provider: lmstudio}
-  validation_kit:   {provider: lmstudio}
+  lead_opener:      {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
+  validation_kit:   {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
   briefing:         {provider: manual}

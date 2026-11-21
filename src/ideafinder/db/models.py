@@ -345,6 +345,109 @@ class MarketStat(Base):
     geography: Mapped[str] = mapped_column(String(8), server_default="US")
 
 
+class WorkingItem(Base):
+    """An Idea on the Working List: its Stage, Time limit and priority (PLAN.md §5)."""
+
+    __tablename__ = "working_items"
+
+    idea_id: Mapped[int] = mapped_column(
+        ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
+    )
+    stage: Mapped[str] = mapped_column(String(16))  # researching / validating / building / paused
+    paused_from: Mapped[str | None] = mapped_column(String(16))  # the Stage to resume into
+    stage_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    time_limit_days: Mapped[int]
+    extended_in_stage: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    priority_rank: Mapped[int]  # 1 = highest; set by Head-to-heads
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Hypothesis(Base):
+    """Who would pay how much to have the problem solved, with Kill criteria. Edits make a new
+    row; `current` marks the one in use."""
+
+    __tablename__ = "hypotheses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    statement: Mapped[str] = mapped_column(Text)
+    kill_criteria: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(16))  # briefing / you
+    current: Mapped[bool] = mapped_column(Boolean, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Experiment(Base):
+    """One test of a Hypothesis, ending in an Outcome."""
+
+    __tablename__ = "experiments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    hypothesis_id: Mapped[int | None] = mapped_column(ForeignKey("hypotheses.id"))
+    stage: Mapped[str] = mapped_column(String(16))
+    type: Mapped[str] = mapped_column(String(16))  # interviews / landing_page / pre_sale / other
+    plan_md: Mapped[str] = mapped_column(Text)
+    outcome: Mapped[str | None] = mapped_column(String(16))  # pass / fail / inconclusive
+    evidence_md: Mapped[str | None] = mapped_column(Text)
+    met_kill_criteria: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Lead(Base):
+    """An Author behind one of an Idea's Signals, worth contacting. Only what they posted
+    publicly is stored; contact is always manual."""
+
+    __tablename__ = "leads"
+    __table_args__ = (UniqueConstraint("idea_id", "signal_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    signal_id: Mapped[int] = mapped_column(ForeignKey("signals.id", ondelete="CASCADE"))
+    author: Mapped[str] = mapped_column(String(300))
+    source_id: Mapped[int] = mapped_column(ForeignKey("sources.id"))
+    url: Mapped[str] = mapped_column(Text)
+    opener: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), server_default="to_contact")
+    notes_md: Mapped[str | None] = mapped_column(Text)
+    experiment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("experiments.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class HeadToHead(Base):
+    """A choice between two Ideas about which deserves your time next. Undecided while
+    `winner` is NULL."""
+
+    __tablename__ = "head_to_heads"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_a: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"))
+    idea_b: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"))
+    trigger: Mapped[str] = mapped_column(String(16))  # full_list / periodic
+    winner: Mapped[int | None] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"))
+    loser_action: Mapped[str | None] = mapped_column(String(16))  # paused / archived / kept
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ValidationKit(Base):
+    """Material for testing an Idea, written when it reaches Validating: {"interview_script":
+    [...], "lead_messages": {lead_id: text}, "landing_page": {...}, "offer": {...}}."""
+
+    __tablename__ = "validation_kits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    content: Mapped[dict[str, Any]]
+    model: Mapped[str] = mapped_column(String(200))
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class EvalItem(Base):
     """An Item in the test set, with its answer-key labels."""
 

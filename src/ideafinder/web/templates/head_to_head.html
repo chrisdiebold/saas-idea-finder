@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Head-to-head · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% include "_validation_css.html" %}{% endblock %}
+{% block content %}
+<p class="small muted"><a href="/working">Working List</a></p>
+<h1>{% if match.trigger == "full_list" %}The list is full: which one stays?{% else %}Which deserves your time next?{% endif %}</h1>
+<p class="lede">
+  {% if match.trigger == "full_list" %}Only {{ active_limit }} Ideas can be active at once. The one you keep goes
+  ahead in priority; the other is Paused or archived.{% else %}This only changes the order of your Working
+  List. Nothing is paused or archived.{% endif %}
+</p>
+{% if match.winner %}<p class="flash">Already decided.</p>{% endif %}
+
+<div class="versus">
+  {% for s in sides %}{% set idea = s.idea %}
+  <section>
+    <h2 style="margin-top: 0"><a href="/ideas/{{ idea.id }}">{{ idea.title }}</a></h2>
+    <p class="persona">For {{ idea.persona }}.
+      {% if s.item %}<span class="stage stage-{{ s.item.stage }}">{{ stage_labels[s.item.stage] }}</span>{% endif %}</p>
+    {% if idea.summary %}<p><strong>{{ idea.summary.verdict }}</strong></p><p>{{ idea.summary.problem }}</p>{% endif %}
+    <p class="small muted">Score {{ idea.score | round | int if idea.score is not none else "not yet" }}. {{ m.counts(idea) }}</p>
+    {% if s.hypothesis %}<p><span class="muted">Hypothesis:</span> {{ s.hypothesis.statement }}</p>{% endif %}
+    {% if s.briefing %}{% set fm = s.briefing.frontmatter %}
+      <p><span class="muted">Briefing:</span> {{ fm.verdict }}, confidence {{ fm.confidence }} of 5.
+        {% if fm.market_math.us_businesses %}{{ "{:,}".format(fm.market_math.customers_needed) }} customers needed of
+        {{ "{:,}".format(fm.market_math.us_businesses) }} US businesses.{% endif %}</p>
+      {% set against = s.briefing.content_md.split("## Case against")[1].split("\n## ")[0] if "## Case against" in s.briefing.content_md else "" %}
+      {% if against %}<details><summary>Case against</summary><div class="small" style="white-space: pre-wrap">{{ against.strip() }}</div></details>{% endif %}
+    {% else %}
+      <p class="small muted">No Briefing yet.</p>
+    {% endif %}
+
+    {% if not match.winner %}
+    <form method="post" action="/head-to-head/{{ match.id }}" class="stack" style="margin-top: 16px">
+      <input type="hidden" name="winner" value="{{ idea.id }}">
+      {% if match.trigger == "full_list" %}
+      {% set other = sides[1 - loop.index0].idea %}
+      <label>And “{{ other.title }}”:
+        <select name="loser_action">
+          <option value="paused">Pause it</option>
+          <option value="archived">Archive it</option>
+        </select></label>
+      <label>If archived, because
+        <select name="reason">
+          {% for r in INBOX_REASONS + ("dropped_after_research",) %}<option value="{{ r }}" {% if r == "dropped_after_research" %}selected{% endif %}>{{ REASON_LABELS[r] }}</option>{% endfor %}
+        </select></label>
+      {% endif %}
+      <p><button class="go">{{ "Keep this one" if match.trigger == "full_list" else "This one first" }}</button></p>
+    </form>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

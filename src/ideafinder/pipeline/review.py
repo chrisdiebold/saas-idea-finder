@@ -11,6 +11,7 @@ from ideafinder.config import ScoringConfig
 from ideafinder.db.models import Idea, ProposedDecision
 from ideafinder.pipeline.publish import ARCHIVE_REASONS, close_pending_proposals, record
 from ideafinder.pipeline.score import gather_evidence
+from ideafinder.validation.working import join, leave
 
 # Reasons you can choose; "outside fit" is only ever set by the Fit check.
 CHOOSABLE_REASONS = tuple(r for r in ARCHIVE_REASONS if r != "outside_fit")
@@ -72,7 +73,10 @@ async def review(
     if to == "working":
         idea.state, idea.archive_reason = "working", None
         record(session, idea, "to_working", evidence, overrode_proposal=overrode, note=note)
+        await join(session, idea, config.validation)
     elif to == "archive":
+        if idea.state == "working":
+            await leave(session, idea_id)
         idea.state, idea.archive_reason = "archived", reason
         record(
             session,

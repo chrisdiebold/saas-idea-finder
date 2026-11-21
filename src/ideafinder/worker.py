@@ -169,6 +169,37 @@ async def summarize_idea(idea_id: int) -> dict:
     return {"written": written is not None}
 
 
+@app.task(queue=MODEL_QUEUE, name="write_lead_openers")
+async def write_lead_openers(idea_id: int) -> dict:
+    """Suggest an opening line for each new Lead of an Idea."""
+    from ideafinder.config import load_config
+    from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.validation.leads import write_openers
+
+    config = load_config(get_settings().config_dir)
+    try:
+        async with LLM(config.models) as llm, get_sessionmaker()() as session:
+            return {"written": await write_openers(session, llm, idea_id)}
+    except ServerUnreachable as exc:
+        return {"skipped": str(exc)}
+
+
+@app.task(queue=MODEL_QUEUE, name="generate_validation_kit")
+async def generate_validation_kit(idea_id: int) -> dict:
+    """Write the Validation kit (run when an Idea reaches Validating, or on request)."""
+    from ideafinder.config import load_config
+    from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.validation.kits import generate_kit
+
+    config = load_config(get_settings().config_dir)
+    try:
+        async with LLM(config.models) as llm, get_sessionmaker()() as session:
+            kit = await generate_kit(session, llm, idea_id)
+    except ServerUnreachable as exc:
+        return {"skipped": str(exc)}
+    return {"kit": kit.id}
+
+
 async def defer(task_name: str, **kwargs) -> None:
     """Queue a job from outside a worker (the web app). Uses its own connection, since the web
     app may share a process with a running worker (`ideafinder up`)."""

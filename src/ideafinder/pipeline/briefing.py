@@ -483,6 +483,9 @@ async def accept_reply(
     waiting.raw_response = raw
     waiting.warnings = parsed.warnings
     waiting.completed_at = datetime.now(UTC)
+    from ideafinder.validation.experiments import prefill_hypothesis
+
+    await prefill_hypothesis(session, idea_id)  # only if you haven't written one
     await session.commit()
     return waiting, parsed
 

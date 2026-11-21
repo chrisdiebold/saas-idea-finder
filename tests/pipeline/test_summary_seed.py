@@ -5,13 +5,14 @@ from datetime import UTC, datetime
 import pytest
 from sqlalchemy import select, update
 
-from ideafinder.config import ClusteringRules, StaleRule
+from ideafinder.config import ClusteringRules, StaleRule, ValidationRules
 from ideafinder.db.models import Idea, IdeaReview, IdeaSignal, Signal
 from ideafinder.pipeline.seed import create_seeded
 from ideafinder.pipeline.summary import needs_summary, summarize
 from tests.fixtures import direction, near
 from tests.pipeline.test_rank import evidence_of
 
+VALIDATION = ValidationRules(time_limit_days=14, active_limit=3)
 RULE = StaleRule(signal_growth_pct=50, on_new_community=True)
 CLUSTER = ClusteringRules(
     attach_similarity=0.8, related_similarity=0.85, min_cluster_size=3, min_authors=2
@@ -65,7 +66,7 @@ async def test_seeded_idea_goes_to_working_list_with_matching_pool_signals(
     fake.vectors["clustering: Crews re-texted after rain (Persona: landscaper)"] = topic
 
     seeded = await create_seeded(
-        session, llm, CLUSTER, "Rain delays", "Crews re-texted after rain", "landscaper"
+        session, llm, CLUSTER, VALIDATION, "Rain delays", "Crews re-texted after rain", "landscaper"
     )
     idea = seeded.idea
     assert (idea.state, idea.seeded, seeded.attached) == ("working", True, 3)
@@ -80,4 +81,4 @@ async def test_seeded_idea_goes_to_working_list_with_matching_pool_signals(
     assert idea.first_seen is not None and idea.first_seen < datetime.now(UTC)
 
     with pytest.raises(ValueError, match="needs a title"):
-        await create_seeded(session, llm, CLUSTER, " ", "x", "y")
+        await create_seeded(session, llm, CLUSTER, VALIDATION, " ", "x", "y")

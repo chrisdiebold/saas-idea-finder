@@ -406,6 +406,7 @@ async def merge(
         target.state, target.archive_reason = source.state, source.archive_reason
     source.merged_into_id = target_id
     await close_pending_proposals(session, source_id, "superseded")
+    await _carry_working_place(session, source_id, target_id, target.state)
     record(session, target, "merged", None, note=f"#{source_id} {source.title} merged in")
     await session.execute(  # its evidence just changed, so its Briefing is out of date
         update(Briefing).where(Briefing.idea_id == target_id).values(stale=True)
@@ -415,6 +416,26 @@ async def merge(
     await link_related(session, target_id, rules)
     await session.commit()
     return target
+
+
+async def _carry_working_place(
+    session: AsyncSession, source_id: int, target_id: int, target_state: str
+) -> None:
+    """If the merged-away Idea was on the Working List, its place goes to the target (when the
+    target is now on the list and has no place of its own) or is given up."""
+    from ideafinder.db.models import WorkingItem
+    from ideafinder.validation.working import leave
+
+    place = await session.get(WorkingItem, source_id)
+    if place is None:
+        return
+    if target_state == "working" and await session.get(WorkingItem, target_id) is None:
+        await session.execute(
+            update(WorkingItem).where(WorkingItem.idea_id == source_id).values(idea_id=target_id)
+        )
+        session.expunge(place)
+    else:
+        await leave(session, source_id)
 
 
 async def split(

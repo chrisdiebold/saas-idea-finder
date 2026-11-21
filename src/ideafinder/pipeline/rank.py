@@ -16,6 +16,7 @@ from ideafinder.pipeline.publish import PublishReport, publish_ready
 from ideafinder.pipeline.resurface import RefitReport, refit, resurface_on_evidence
 from ideafinder.pipeline.score import score_ideas, snapshot_week
 from ideafinder.pipeline.summary import SummaryReport, summarize_pending
+from ideafinder.validation.head_to_head import ask_periodic
 
 
 @dataclass
@@ -29,6 +30,7 @@ class RankReport:
     propose: ProposeReport
     industries_mapped: int
     stale_briefings: list[int]
+    head_to_head_asked: bool
     snapshots: int
 
 
@@ -48,6 +50,7 @@ async def rank(
     proposed = await propose_missing(session, llm, profile)
     stale = await mark_stale(session, config.stale, evidence)
     snapshots = await snapshot_week(session, now)
+    asked = await ask_periodic(session, now)
     return RankReport(
         scored=len(evidence),
         has_profile=profile is not None,
@@ -58,5 +61,6 @@ async def rank(
         propose=proposed,
         industries_mapped=industries,
         stale_briefings=stale,
+        head_to_head_asked=asked is not None,
         snapshots=snapshots,
     )

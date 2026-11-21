@@ -280,7 +280,13 @@ async def new_idea(
     try:
         async with LLM(config.models) as llm, get_sessionmaker()() as session:
             seeded = await create_seeded(
-                session, llm, config.scoring.clustering, title, problem_statement, persona
+                session,
+                llm,
+                config.scoring.clustering,
+                config.scoring.validation,
+                title,
+                problem_statement,
+                persona,
             )
     except (ValueError, ModelUnavailable) as exc:
         async with get_sessionmaker()() as session:
@@ -359,19 +365,6 @@ async def idea_page(request: Request, idea_id: int) -> HTMLResponse:
 
 
 # --- Working List and Archive ---------------------------------------------------------------
-
-
-@router.get("/working", response_class=HTMLResponse)
-async def working(request: Request) -> HTMLResponse:
-    async with get_sessionmaker()() as session:
-        ideas = (
-            await session.scalars(
-                select(Idea)
-                .where(Idea.state == "working", Idea.merged_into_id.is_(None))
-                .order_by(Idea.score.desc().nulls_last())
-            )
-        ).all()
-        return await render(request, session, "working.html", ideas=ideas)
 
 
 @router.get("/archive", response_class=HTMLResponse)
