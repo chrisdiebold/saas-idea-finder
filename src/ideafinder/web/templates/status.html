@@ -32,7 +32,14 @@
 <table>
   {% if status.config %}
     {% for s in status.config.sources.sources %}
-    <tr><td>{{ s.name }}</td><td>Phase {{ s.phase }}, {{ "enabled" if s.enabled else "disabled" }}, {{ s.communities | length }} Watch-listed Communities</td></tr>
+    {% set run = status.source_runs.get(s.key) %}
+    <tr><td>{{ s.name }}<br><small>Phase {{ s.phase }}{{ "" if s.enabled else ", disabled" }} · {{ s.communities | length }} Watch-listed</small></td>
+      <td>{% if not run %}never collected
+          {% elif run.status == "running" %}collecting now…
+          {% else %}<span class="{{ 'ok' if run.status == 'succeeded' else 'bad' }}">{{ run.status }}</span>
+            {{ run.finished_at.strftime("%Y-%m-%d %H:%M") if run.finished_at else "" }} · {{ run.new }} new · {{ "{:,}".format(run.items_total) }} Items total
+            {% for e in run.errors[:3] %}<br><small class="bad">{{ e }}</small>{% endfor %}
+          {% endif %}</td></tr>
     {% endfor %}
   {% else %}
     <tr><td>Config</td><td class="bad">invalid</td></tr>

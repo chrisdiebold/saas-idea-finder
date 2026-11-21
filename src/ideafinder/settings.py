@@ -3,6 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +19,10 @@ class Settings(BaseSettings):
     web_host: str = "127.0.0.1"
     web_port: int = 8765
     config_dir: Path = PROJECT_ROOT / "config"
+
+    # Collection
+    user_agent: str = "ideafinder/0.1 (personal research tool)"
+    stackexchange_key: SecretStr | None = None  # raises the daily quota from 300 to 10,000
 
     @property
     def sqlalchemy_url(self) -> str:

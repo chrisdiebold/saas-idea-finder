@@ -44,7 +44,10 @@ def upgrade(settings: Settings, revision: str = "head") -> None:
 
 
 def new_revision(settings: Settings, message: str, autogenerate: bool = True) -> None:
-    command.revision(alembic_config(settings), message=message, autogenerate=autogenerate)
+    """Create a migration numbered after the latest one (0005, 0006, ...)."""
+    cfg = alembic_config(settings)
+    head = ScriptDirectory.from_config(cfg).get_current_head() or "0000"
+    command.revision(cfg, message=message, autogenerate=autogenerate, rev_id=f"{int(head) + 1:04d}")
 
 
 @dataclass(frozen=True)

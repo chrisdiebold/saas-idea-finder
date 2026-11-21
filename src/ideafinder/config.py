@@ -5,7 +5,7 @@ Machine-specific values such as the database address live in `settings.py` inste
 """
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -27,6 +27,8 @@ class SourceConfig(_Strict):
     # The Watch list: Communities collected from regularly (subreddit names, Jira project keys,
     # Stack Exchange site names, WordPress plugin slugs, ...). Meaning depends on the Source.
     communities: list[str] = []
+    # Source-specific settings, interpreted by that Source's collector.
+    options: dict[str, Any] = {}
 
 
 class QueryConfig(_Strict):

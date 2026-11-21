@@ -24,11 +24,25 @@ class QueueStatus:
 
 
 @dataclass(frozen=True)
+class SourceRun:
+    """The latest collection run for one Source."""
+
+    source: str
+    name: str
+    status: str
+    finished_at: datetime | None
+    new: int
+    errors: list[str]
+    items_total: int
+
+
+@dataclass(frozen=True)
 class SystemStatus:
     config: Config | None
     config_error: str | None
     database: admin.DatabaseStatus
     queues: list[QueueStatus] = field(default_factory=list)
+    source_runs: dict[str, SourceRun] = field(default_factory=dict)
 
     @property
     def problems(self) -> list[str]:
@@ -56,6 +70,39 @@ def _heartbeats(settings: Settings) -> dict[str, datetime]:
         engine.dispose()
 
 
+_LATEST_RUNS = text("""
+    SELECT s.key, s.name, r.status, r.finished_at,
+           coalesce((r.stats -> 'totals' ->> 'new')::int, 0) AS new, r.errors,
+           (SELECT count(*) FROM items i WHERE i.source_id = s.id) AS items_total
+    FROM sources s
+    LEFT JOIN LATERAL (
+        SELECT * FROM runs WHERE runs.source_id = s.id AND runs.stage = 'collect'
+        ORDER BY started_at DESC LIMIT 1
+    ) r ON true
+    WHERE r.id IS NOT NULL
+""")
+
+
+def _source_runs(settings: Settings) -> dict[str, SourceRun]:
+    engine = create_engine(settings.sqlalchemy_url, connect_args={"connect_timeout": 3})
+    try:
+        with engine.connect() as conn:
+            return {
+                row.key: SourceRun(
+                    source=row.key,
+                    name=row.name,
+                    status=row.status,
+                    finished_at=row.finished_at,
+                    new=row.new,
+                    errors=list(row.errors or []),
+                    items_total=row.items_total,
+                )
+                for row in conn.execute(_LATEST_RUNS)
+            }
+    finally:
+        engine.dispose()
+
+
 def get_status(settings: Settings) -> SystemStatus:
     try:
         config, config_error = load_config(settings.config_dir), None
@@ -65,4 +112,11 @@ def get_status(settings: Settings) -> SystemStatus:
     database = admin.status(settings)
     heartbeats = _heartbeats(settings) if database.up_to_date else {}
     queues = [QueueStatus(queue=q, last_seen=heartbeats.get(q)) for q in QUEUES]
-    return SystemStatus(config=config, config_error=config_error, database=database, queues=queues)
+    source_runs = _source_runs(settings) if database.up_to_date else {}
+    return SystemStatus(
+        config=config,
+        config_error=config_error,
+        database=database,
+        queues=queues,
+        source_runs=source_runs,
+    )

@@ -25,7 +25,15 @@ which to pursue and validate. Runs entirely on your Mac.
 
 ```sh
 uv run ideafinder up      # web app on http://127.0.0.1:8765 plus both workers; Ctrl+C to stop
+uv run ideafinder collect # collect new Items now (the first run backfills 12 months)
 ```
+
+`ideafinder collect --since-days 3` is a trial run over a short window; it doesn't move the cursors, so the
+real backfill still happens later. `--source/-s KEY` limits collection to one Source. While the workers run,
+collection also happens daily at 06:00.
+
+Stack Exchange works without a key (300 requests/day) but a free key from stackapps.com raises that to 10,000:
+put `IDEAFINDER_STACKEXCHANGE_KEY=...` in `.env`.
 
 Other commands: `ideafinder web` (web app only), `ideafinder worker [--queue collect|model]` (workers only),
 `ideafinder db status`, `ideafinder db revision -m "..."`.

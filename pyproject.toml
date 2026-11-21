@@ -5,10 +5,12 @@ description = "Personal tool that finds and validates SaaS ideas from public evi
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "aiolimiter>=1.3.0",
     "alembic>=1.20.1",
     "fastapi>=0.165.0",
-    "httpx>=0.28.1",
+    "httpx2>=2.16.2",
     "jinja2>=3.1.6",
+    "lingua-language-detector>=2.2.0",
     "pgvector>=0.5.1",
     "procrastinate==3.12.0",
     "psycopg[binary,pool]>=3.2",

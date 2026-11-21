@@ -36,7 +36,7 @@ with polite rate limits and no redistribution.
 |---|---|---|
 | Hacker News | Pain, Request; Market (Show HN launches) | Algolia HN Search API, no auth, full history |
 | Atlassian public Jira | Complaint, Request, with Votes | REST API + JQL, no auth, history back to 2004 |
-| WordPress.org | Complaint (plugin reviews), Pain (support forums) | Official API + RSS |
+| WordPress.org | Complaint (plugin reviews), Pain (support forums) | RSS per plugin: latest 30 reviews and 30 support threads, no history |
 | Stack Exchange | Request, Pain | Official API with a free key (10k requests/day) |
 
 **Known gap:** without Reddit (dropped, see below), Phase 1 leans toward developers, IT and website owners.
@@ -85,8 +85,12 @@ Market Signals come only from Product Hunt and Show HN; there is no revenue data
 ### Collection rules
 - **English only.** Items in other languages are skipped before any model sees them.
 - **Backfill:** the first run collects 12 months of history, or as much as each Source allows. Collection is daily
-  after that, and every Phase 1 collector resumes from "everything since the last run", so nothing is lost while
-  the Mac sleeps.
+  after that, and every collector resumes from "everything since the last run", so nothing is lost while the Mac
+  sleeps. Exceptions:
+  - **WordPress.org** feeds hold only their latest 30 entries, so there is no history. Daily collection keeps up
+    even with the busiest plugins.
+  - **Jira** follows each suggestion's last-updated time, so an old suggestion that gets a new comment or vote
+    is collected again with all its comments.
 - **Watch list:** each Source has Communities to collect from (Stack Exchange sites, Jira projects, WordPress
   plugins). The system **suggests** Communities it keeps running into, with evidence;
   you approve or ignore each one.
@@ -99,7 +103,9 @@ Market Signals come only from Product Hunt and Show HN; there is no revenue data
 - **Source-specific strategies:**
   - **Jira:** unresolved suggestions sorted by Votes
   - **WordPress.org:** 1–3★ reviews and support threads of popular plugins
-  - **Stack Exchange:** frequently viewed questions on Watch-listed sites
+  - **Stack Exchange:** all questions on Software Recommendations (every one is a request); pain-phrase
+    searches on the other Watch-listed sites
+  - **Hacker News:** pain-phrase searches over stories and comments, plus every Show HN launch
 
 ---
 

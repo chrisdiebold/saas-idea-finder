@@ -31,9 +31,13 @@ sources:
     phase: 1
     rate_limit_per_minute: 30
     communities: [woocommerce, contact-form-7, elementor, wordpress-seo]   # plugin slugs
+    options:
+      max_review_rating: 3      # only 1–3★ reviews are evidence of a problem
 
   - key: stackexchange
     name: Stack Exchange
     phase: 1
     rate_limit_per_minute: 30   # 10k requests/day with a key
     communities: [softwarerecs, webapps, superuser]   # site names
+    options:
+      collect_all: [softwarerecs]   # every question there is a request; other sites use the queries

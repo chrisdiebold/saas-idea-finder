@@ -133,6 +133,49 @@ def doctor() -> None:
         raise typer.Exit(1)
 
 
+@app.command()
+def collect(
+    sources: Annotated[
+        list[str] | None,
+        typer.Option("--source", "-s", help="Source key to collect (repeatable). Default: all."),
+    ] = None,
+    since_days: Annotated[
+        int | None,
+        typer.Option(help="Trial run over the last N days. Cursors are not used or saved."),
+    ] = None,
+) -> None:
+    """Collect new Items from Sources now (first run backfills 12 months)."""
+    from datetime import UTC, datetime, timedelta
+
+    from ideafinder.collectors.runner import collect as run_collect
+    from ideafinder.config import load_config
+
+    _configure_logging()
+    _require_ready()
+    settings = get_settings()
+    since = datetime.now(UTC) - timedelta(days=since_days) if since_days else None
+    try:
+        reports = asyncio.run(
+            run_collect(load_config(settings.config_dir), settings, sources, since)
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+    typer.echo("")
+    for r in reports:
+        t = r.totals
+        colour = {"succeeded": "green", "partial": "yellow"}.get(r.status, "red")
+        typer.secho(
+            f"{r.source:<16} {r.status:<10} {t.fetched:>6} fetched  {t.new:>6} new  "
+            f"{t.updated:>6} updated  {t.skipped_language:>5} non-English",
+            fg=colour,
+        )
+        for error in r.errors:
+            typer.secho(f"    {error}", fg=colour)
+    if any(r.status == "failed" for r in reports):
+        raise typer.Exit(1)
+
+
 @db_app.command("upgrade")
 def db_upgrade() -> None:
     """Create the database if needed and apply all migrations."""
