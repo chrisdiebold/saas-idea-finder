@@ -1,27 +1,11 @@
 """Clustering: grouping logic, then attach / form / Related / Merge / Split against Postgres."""
 
-import json
-from datetime import UTC, datetime, timedelta
-
-import httpx2
 import numpy as np
 import pytest
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import select
 
-from ideafinder.config import ClusteringRules, load_config
-from ideafinder.db import admin
-from ideafinder.db.engine import get_sessionmaker
-from ideafinder.db.models import (
-    EMBEDDING_DIM,
-    Community,
-    Idea,
-    IdeaRelation,
-    IdeaSignal,
-    Item,
-    Signal,
-    Source,
-)
-from ideafinder.llm import LLM
+from ideafinder.config import ClusteringRules
+from ideafinder.db.models import Idea, IdeaRelation, IdeaSignal
 from ideafinder.pipeline.cluster import (
     NAMING_SAMPLE,
     ClusterError,
@@ -34,21 +18,11 @@ from ideafinder.pipeline.cluster import (
     render_for_naming,
     split,
 )
+from tests.pipeline.conftest import direction, near
 
 RULES = ClusteringRules(
     attach_similarity=0.8, related_similarity=0.85, min_cluster_size=3, min_authors=2
 )
-rng = np.random.default_rng(7)
-
-
-def direction(seed: int) -> np.ndarray:
-    v = np.random.default_rng(seed).normal(size=EMBEDDING_DIM)
-    return v / np.linalg.norm(v)
-
-
-def near(base: np.ndarray, noise: float = 0.05) -> np.ndarray:
-    v = base + rng.normal(scale=noise / np.sqrt(EMBEDDING_DIM), size=EMBEDDING_DIM)
-    return v / np.linalg.norm(v)
 
 
 def pool_signal(i: int, vector: np.ndarray, author: str) -> PoolSignal:
@@ -85,111 +59,6 @@ def test_naming_prompt_leads_with_the_most_central_signals():
 # --- against Postgres -----------------------------------------------------------------------
 
 
-@pytest.fixture
-async def session(use_settings, test_database_url):
-    settings = use_settings(test_database_url)
-    admin.create_database_if_missing(settings)
-    admin.upgrade(settings)
-    engine = create_engine(settings.sqlalchemy_url)
-    with engine.begin() as conn:
-        conn.execute(text("TRUNCATE ideas, signals, items, communities, sources CASCADE"))
-    engine.dispose()
-    async with get_sessionmaker()() as s:
-        yield s
-
-
-class FakeModel:
-    """Stands in for LM Studio: names Ideas from a queue, embeds known texts as given vectors."""
-
-    def __init__(self):
-        self.names: list[dict] = []
-        self.vectors: dict[str, np.ndarray] = {}
-        self.prompts: list[str] = []
-
-    def handler(self, request):
-        body = json.loads(request.content)
-        if request.url.path.endswith("/embeddings"):
-            data = [
-                {"index": i, "embedding": self.vectors.get(t, direction(hash(t) % 1000)).tolist()}
-                for i, t in enumerate(body["input"])
-            ]
-            return httpx2.Response(200, json={"data": data})
-        self.prompts.append(body["messages"][1]["content"])
-        answer = json.dumps(self.names.pop(0))
-        return httpx2.Response(
-            200, json={"choices": [{"message": {"content": answer}, "finish_reason": "stop"}]}
-        )
-
-    def name(self, title: str, problem: str, persona: str, problem_vector: np.ndarray):
-        self.names.append({"title": title, "problem_statement": problem, "persona": persona})
-        self.vectors[f"clustering: {problem}"] = problem_vector
-
-
-@pytest.fixture
-def fake():
-    return FakeModel()
-
-
-@pytest.fixture
-async def llm(repo_config_dir, fake):
-    async with LLM(load_config(repo_config_dir).models, httpx2.MockTransport(fake.handler)) as m:
-        yield m
-
-
-class Evidence:
-    """Builds Sources, Items and embedded Signals in the test database."""
-
-    def __init__(self, session):
-        self.session = session
-        self.n = 0
-        self.community_id = None
-
-    async def signal(self, vector: np.ndarray, author: str, kind: str = "pain") -> int:
-        if self.community_id is None:
-            source = Source(key="hackernews", name="HN", phase=1, enabled=True)
-            self.session.add(source)
-            await self.session.flush()
-            community = Community(source_id=source.id, external_ref="hn", name="HN")
-            self.session.add(community)
-            await self.session.flush()
-            self.source_id, self.community_id = source.id, community.id
-        self.n += 1
-        item = Item(
-            source_id=self.source_id,
-            community_id=self.community_id,
-            external_id=str(self.n),
-            kind="comment",
-            url=f"https://example.com/{self.n}",
-            body="text",
-            author=author,
-            language="en",
-            raw={},
-            created_at=datetime(2026, 1, 1, tzinfo=UTC) + timedelta(days=self.n),
-        )
-        self.session.add(item)
-        await self.session.flush()
-        signal = Signal(
-            item_id=item.id,
-            kind=kind,
-            problem_statement=f"problem {self.n}",
-            persona="persona",
-            intensity=3,
-            quote="text",
-            quote_verified=True,
-            embedding=vector.tolist(),
-            model="test",
-            prompt_version="test",
-        )
-        self.session.add(signal)
-        await self.session.commit()
-        return signal.id
-
-
-@pytest.fixture
-def evidence(session):
-    return Evidence(session)
-
-
 async def members(session, idea_id: int) -> set[int]:
     rows = await session.scalars(select(IdeaSignal.signal_id).where(IdeaSignal.idea_id == idea_id))
     return set(rows.all())
@@ -217,7 +86,7 @@ async def test_pool_forms_named_ideas_and_new_signals_attach(session, llm, fake,
         "incubating",
     )
     assert await members(session, idea.id) == set(group)
-    assert "4 Signals from 4 different people" in fake.prompts[0]
+    assert "4 Signals from 4 different people" in fake.prompts["name_idea"][0]
     assert idea.first_seen < idea.last_seen
 
     late = await evidence.signal(near(a), "newcomer")

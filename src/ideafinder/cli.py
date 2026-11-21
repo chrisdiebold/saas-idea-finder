@@ -298,7 +298,7 @@ def ideas_list(
     ] = None,
     limit: Annotated[int, typer.Option(help="How many to show.")] = 50,
 ) -> None:
-    """Ideas with the most Authors first."""
+    """Ideas with the highest score first."""
     from ideafinder.pipeline.cluster import list_ideas
 
     _require_ready()
@@ -306,10 +306,13 @@ def ideas_list(
     if not rows:
         typer.echo("No Ideas yet. Run: ideafinder cluster")
         return
-    typer.echo(f"{'id':>5}  {'authors':>7} {'signals':>7} {'comms':>5}  {'state':<11} title")
+    typer.echo(
+        f"{'id':>5} {'score':>5}  {'authors':>7} {'signals':>7} {'comms':>5}  {'state':<11} title"
+    )
     for r in rows:
+        score = f"{r.idea.score:.0f}" if r.idea.score is not None else "-"
         typer.echo(
-            f"{r.idea.id:>5}  {r.authors:>7} {r.signals:>7} {r.communities:>5}  "
+            f"{r.idea.id:>5} {score:>5}  {r.authors:>7} {r.signals:>7} {r.communities:>5}  "
             f"{r.idea.state:<11} {r.idea.title}"
         )
 
@@ -332,6 +335,30 @@ def ideas_show(idea_id: Annotated[int, typer.Argument(help="Idea id.")]) -> None
     typer.echo(f"Persona: {idea.persona}")
     seen = f"{idea.first_seen:%Y-%m-%d} – {idea.last_seen:%Y-%m-%d}" if idea.first_seen else "-"
     typer.echo(f"State:   {idea.state} · seen {seen}")
+    if idea.state == "archived":
+        typer.echo(f"Archived as: {idea.archive_reason}")
+    if idea.score is not None:
+        parts = (idea.score_breakdown or {}).get("components", {})
+        typer.echo(
+            f"Score:   {idea.score:.0f} / 100 · "
+            + ", ".join(f"{k} {v:.2f}" for k, v in parts.items())
+        )
+    if idea.fit:
+        broken = idea.fit["deal_breakers"]
+        typer.echo(
+            f"Fit:     {idea.fit['fit']:.2f} · solo-buildable {idea.fit['solo_buildable']:.2f} · "
+            f"business buyer {idea.fit['b2b']} · {idea.fit['notes']}"
+            + (f" · BREAKS: {'; '.join(broken)}" if broken else "")
+        )
+    if detail.proposal:
+        p = detail.proposal
+        outcome = f"archive ({p.archive_reason})" if p.proposal == "archive" else "Working List"
+        typer.echo(f"Proposed: {outcome} · confidence {p.confidence:.2f} · {p.rationale}")
+    for r in detail.reviews:
+        extra = " · ".join(x for x in (r.archive_reason, r.note) if x)
+        typer.echo(
+            f"History: {r.created_at:%Y-%m-%d} {r.action}" + (f" · {extra}" if extra else "")
+        )
     for other, similarity in detail.related:
         typer.echo(f"Related: #{other.id} {other.title} ({other.persona}) · {similarity:.2f}")
     typer.echo(f"\n{len(detail.signals)} Signals:")
@@ -385,6 +412,116 @@ def ideas_split(
         typer.secho(f"✗ {exc}", fg="red", err=True)
         raise typer.Exit(1) from exc
     typer.echo(f"Split {len(signal_ids)} Signals off #{idea_id} into #{idea.id} {idea.title}")
+
+
+@ideas_app.command("review")
+def ideas_review(
+    idea_id: Annotated[int, typer.Argument(help="Idea id.")],
+    to: Annotated[str, typer.Argument(help="working, archive or restore")],
+    reason: Annotated[
+        str | None,
+        typer.Option(
+            help="Archive reason: not_interested, too_competitive, low_willingness_to_pay, "
+            "too_big_to_build, dropped_after_research"
+        ),
+    ] = None,
+    note: Annotated[str | None, typer.Option(help="Why, in your words.")] = None,
+) -> None:
+    """Move an Idea to the Working List or the Archive, or restore it (until the Inbox UI in M5)."""
+    from ideafinder.config import load_config
+    from ideafinder.pipeline.review import ReviewError, review
+
+    _require_ready()
+    config = load_config(get_settings().config_dir).scoring
+    try:
+        idea = _ideas_session(lambda s: review(s, config, idea_id, to, reason, note))
+    except ReviewError as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    where = f"archived ({idea.archive_reason})" if idea.state == "archived" else idea.state
+    typer.echo(f"#{idea.id} {idea.title} → {where}")
+
+
+@app.command()
+def rank() -> None:
+    """Score Ideas, check fit, publish to the Inbox, resurface, and propose decisions."""
+    from ideafinder.config import load_config
+    from ideafinder.db.engine import get_sessionmaker
+    from ideafinder.llm import LLM, ModelUnavailable
+    from ideafinder.pipeline.rank import rank as run_rank
+
+    _configure_logging()
+    _require_ready()
+    config = load_config(get_settings().config_dir)
+
+    async def run():
+        async with LLM(config.models) as llm:
+            async with get_sessionmaker()() as session:
+                return await run_rank(session, llm, config.scoring)
+
+    try:
+        r = asyncio.run(run())
+    except ModelUnavailable as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    if not r.has_profile:
+        typer.secho(
+            "! No Fit profile yet, so nothing is checked for fit. See: ideafinder fit load --help",
+            fg="yellow",
+        )
+    typer.echo(f"Scored {r.scored} Ideas · {r.snapshots} weekly snapshots taken")
+    typer.echo(
+        f"Published {len(r.publish.published)} to the Inbox · "
+        f"{len(r.publish.outside_fit) + len(r.refit.outside_fit)} archived as outside fit · "
+        f"{len(r.resurfaced) + len(r.refit.resurfaced)} resurfaced"
+    )
+    typer.echo(
+        f"Proposed decisions: {r.propose.proposed} new"
+        + (f" ({r.propose.failed} failed)" if r.propose.failed else "")
+        + (
+            f" · fit checks failed: {r.publish.fit_failed + r.refit.failed}"
+            if r.publish.fit_failed + r.refit.failed
+            else ""
+        )
+    )
+
+
+fit_app = typer.Typer(no_args_is_help=True, help="Your Fit profile (what Ideas you'd build).")
+app.add_typer(fit_app, name="fit")
+
+
+@fit_app.command("show")
+def fit_show() -> None:
+    """Show the current Fit profile."""
+    from ideafinder.pipeline.fit import get_profile, profile_as_text
+
+    _require_ready()
+    profile = _ideas_session(get_profile)
+    if profile is None:
+        typer.echo("No Fit profile yet. Start from config/fit_profile.example.yaml")
+        return
+    typer.echo(f"Version {profile.version}, updated {profile.updated_at:%Y-%m-%d}")
+    typer.echo(profile_as_text(profile))
+    typer.echo("Deal-breakers: " + ("; ".join(profile.deal_breakers) or "none"))
+
+
+@fit_app.command("load")
+def fit_load(
+    path: Annotated[Path, typer.Argument(help="YAML file, like config/fit_profile.example.yaml")],
+) -> None:
+    """Load the Fit profile from a YAML file. Ideas are re-checked on the next `rank`."""
+    from pydantic import ValidationError
+
+    from ideafinder.pipeline.fit import read_profile_file, save_profile
+
+    _require_ready()
+    try:
+        data = read_profile_file(path)
+    except (OSError, ValidationError) as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    profile = _ideas_session(lambda s: save_profile(s, data))
+    typer.echo(f"Fit profile saved (version {profile.version}).")
 
 
 eval_app = typer.Typer(no_args_is_help=True, help="The extraction test set (pick the local model).")

@@ -1,12 +1,13 @@
 """SQLAlchemy models. Tables are added milestone by milestone (see PLAN.md §6)."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -172,6 +173,17 @@ class Idea(Base):
     first_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Ranking (M4)
+    score: Mapped[float | None] = mapped_column(index=True)  # 0-100
+    score_breakdown: Mapped[dict[str, Any] | None]  # components, weights and the raw counts
+    scored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Fit check result: {"deal_breakers": [...], "fit": 0-1, "b2b": bool, "solo_buildable": 0-1,
+    # "notes": str}, and the Fit profile version it was checked against.
+    fit: Mapped[dict[str, Any] | None]
+    fit_version: Mapped[int | None]
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    archive_reason: Mapped[str | None] = mapped_column(String(32))  # current one, if archived
+    resurfaced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class IdeaSignal(Base):
@@ -199,6 +211,80 @@ class IdeaRelation(Base):
         ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
     )
     similarity: Mapped[float | None]
+
+
+class FitProfile(Base):
+    """Your criteria for Ideas you'd build (GLOSSARY.md). One row; `version` goes up on each change
+    so Ideas checked against an older version are checked again."""
+
+    __tablename__ = "fit_profile"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    skills: Mapped[list[Any]] = mapped_column(server_default="[]")
+    price_min_usd: Mapped[int | None]  # per customer per month
+    price_max_usd: Mapped[int | None]
+    sales_model: Mapped[str | None] = mapped_column(String(16))  # self_serve / sales_led / either
+    preferred_industries: Mapped[list[Any]] = mapped_column(server_default="[]")
+    avoided_industries: Mapped[list[Any]] = mapped_column(server_default="[]")
+    deal_breakers: Mapped[list[Any]] = mapped_column(server_default="[]")
+    revenue_goal_usd: Mapped[int | None]  # monthly
+    version: Mapped[int] = mapped_column(server_default="1")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ProposedDecision(Base):
+    """A suggested Review outcome (or kill) for an Idea. Never applied without you."""
+
+    __tablename__ = "proposed_decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # review / kill
+    proposal: Mapped[str] = mapped_column(String(16))  # working / archive
+    archive_reason: Mapped[str | None] = mapped_column(String(32))
+    rationale: Mapped[str] = mapped_column(Text)
+    confidence: Mapped[float]  # 0-1
+    status: Mapped[str] = mapped_column(String(16), server_default="pending")
+    model: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class IdeaReview(Base):
+    """Something that changed an Idea's state, by you or automatically, with the evidence at the
+    time (resurfacing compares against it)."""
+
+    __tablename__ = "idea_reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    # published, to_working, to_archive, restored, resurfaced, auto_outside_fit, merged, split
+    action: Mapped[str] = mapped_column(String(24))
+    archive_reason: Mapped[str | None] = mapped_column(String(32))
+    overrode_proposal: Mapped[bool | None]
+    note: Mapped[str | None] = mapped_column(Text)
+    score_at_action: Mapped[float | None]
+    signal_count_at_action: Mapped[int | None]
+    recent_signals_at_action: Mapped[int | None]  # Signals in the 4 weeks before the action
+    community_ids_at_action: Mapped[list[Any]] = mapped_column(server_default="[]")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IdeaSnapshot(Base):
+    """An Idea's evidence and score at the start of a week, for trends."""
+
+    __tablename__ = "idea_snapshots"
+
+    idea_id: Mapped[int] = mapped_column(
+        ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
+    )
+    week: Mapped[date] = mapped_column(Date, primary_key=True)  # Monday
+    signal_count: Mapped[int]
+    author_count: Mapped[int]
+    community_count: Mapped[int]
+    score: Mapped[float | None]
 
 
 class EvalItem(Base):

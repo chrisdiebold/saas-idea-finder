@@ -116,6 +116,34 @@ async def form_ideas(timestamp: int) -> dict:
     return {"pool": report.pool, "created": len(report.created), "failed": report.failed}
 
 
+@app.periodic(cron="0 7 * * *", periodic_id="daily-rank")
+@app.task(queue=MODEL_QUEUE, name="rank_ideas", queueing_lock="rank_ideas")
+async def rank_ideas(timestamp: int) -> dict:
+    """Daily, after collection: score, check fit, publish, resurface, propose, snapshot.
+
+    Runs on `model` because the Fit check and Proposed decisions need the local model.
+    """
+    from ideafinder.config import load_config
+    from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.pipeline.rank import rank
+
+    settings = get_settings()
+    config = load_config(settings.config_dir)
+    try:
+        async with LLM(config.models) as llm:
+            async with get_sessionmaker()() as session:
+                r = await rank(session, llm, config.scoring)
+    except ServerUnreachable as exc:
+        return {"skipped": str(exc)}
+    return {
+        "scored": r.scored,
+        "published": len(r.publish.published),
+        "outside_fit": len(r.publish.outside_fit) + len(r.refit.outside_fit),
+        "resurfaced": len(r.resurfaced) + len(r.refit.resurfaced),
+        "proposed": r.propose.proposed,
+    }
+
+
 @app.periodic(cron="0 6 * * *", periodic_id="daily-collect")
 @app.task(queue=COLLECT_QUEUE, name="daily_collect", queueing_lock="collect_sources")
 async def daily_collect(timestamp: int) -> dict:

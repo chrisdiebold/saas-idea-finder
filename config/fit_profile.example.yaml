@@ -1,0 +1,20 @@
+# Your Fit profile: what makes an Idea worth building for you (GLOSSARY.md: Fit profile).
+# Copy this file, fill it in, then load it:  ideafinder fit load my_fit_profile.yaml
+# Loading again after edits re-checks fit for every Idea (archived "outside fit" ones can resurface).
+
+skills:                     # what you can build with
+  - Python backends
+  - web apps
+
+price_min_usd: 20           # per customer per month
+price_max_usd: 500
+sales_model: self_serve     # self_serve / sales_led / either
+
+preferred_industries: []    # e.g. [trades, property management]
+avoided_industries: []      # e.g. [gambling]
+
+deal_breakers:              # an Idea breaking any of these is archived as "outside fit"
+  - needs custom hardware
+  - handles regulated health data (HIPAA)
+
+revenue_goal_usd: 10000     # monthly revenue the Idea must be able to reach

@@ -35,6 +35,19 @@ collection also happens daily at 06:00.
 Stack Exchange works without a key (300 requests/day) but a free key from stackapps.com raises that to 10,000:
 put `IDEAFINDER_STACKEXCHANGE_KEY=...` in `.env`.
 
+While the workers run, the pipeline also runs on its own: extraction every 10 minutes (new Signals attach to
+existing Ideas), forming new Ideas weekly (Monday 05:00), and ranking daily at 07:00. To run steps by hand:
+
+```sh
+uv run ideafinder prefilter && uv run ideafinder extract --threads 50   # Items → Signals
+uv run ideafinder cluster                  # Signals → Ideas (attach, then form new ones from the pool)
+uv run ideafinder fit load my_fit.yaml     # your Fit profile; start from config/fit_profile.example.yaml
+uv run ideafinder rank                     # score, check fit, publish to the Inbox, propose decisions
+uv run ideafinder ideas list --state inbox
+uv run ideafinder ideas show ID
+uv run ideafinder ideas review ID working  # or: archive --reason too_competitive / restore
+```
+
 Other commands: `ideafinder web` (web app only), `ideafinder worker [--queue collect|model]` (workers only),
 `ideafinder db status`, `ideafinder db revision -m "..."`.
 

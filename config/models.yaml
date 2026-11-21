@@ -12,8 +12,8 @@ tasks:
   extract:          {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}   # provisional until the eval
   embed:            {provider: lmstudio, model: text-embedding-nomic-embed-text-v1.5}
   name_idea:        {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
-  fit_check:        {provider: lmstudio}
-  propose_decision: {provider: lmstudio}
+  fit_check:        {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
+  propose_decision: {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}
   summary:          {provider: lmstudio}
   industry_codes:   {provider: lmstudio}
   lead_opener:      {provider: lmstudio}

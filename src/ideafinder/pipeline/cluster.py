@@ -21,9 +21,19 @@ from sqlalchemy import Text, cast, delete, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ideafinder.config import ClusteringRules
-from ideafinder.db.models import Idea, IdeaRelation, IdeaSignal, Item, Signal, Source
+from ideafinder.db.models import (
+    Idea,
+    IdeaRelation,
+    IdeaReview,
+    IdeaSignal,
+    Item,
+    ProposedDecision,
+    Signal,
+    Source,
+)
 from ideafinder.llm import LLM, ModelUnavailable, ServerUnreachable
 from ideafinder.pipeline.embed import PREFIX
+from ideafinder.pipeline.publish import close_pending_proposals, record
 
 log = logging.getLogger(__name__)
 
@@ -391,8 +401,10 @@ async def merge(
         )
     )
     if STATE_RANK[source.state] > STATE_RANK[target.state]:
-        target.state = source.state
+        target.state, target.archive_reason = source.state, source.archive_reason
     source.merged_into_id = target_id
+    await close_pending_proposals(session, source_id, "superseded")
+    record(session, target, "merged", None, note=f"#{source_id} {source.title} merged in")
     await session.flush()
     await refresh_ideas(session, [target_id])
     await link_related(session, target_id, rules)
@@ -433,6 +445,10 @@ async def split(
         for (s, a), v in zip(chosen, vectors, strict=True)
     ]
     new = await create_idea(session, llm, members, [None] * len(members), rules)
+    original = await session.get(Idea, idea_id)
+    record(
+        session, original, "split", None, note=f"{len(members)} Signals split off into #{new.id}"
+    )
     await refresh_ideas(session, [idea_id])
     await session.commit()
     return new
@@ -452,7 +468,7 @@ class IdeaRow:
 async def list_ideas(
     session: AsyncSession, state: str | None = None, limit: int = 50
 ) -> list[IdeaRow]:
-    """Live (not merged) Ideas with evidence counts, most Authors first."""
+    """Live (not merged) Ideas with evidence counts, highest score first."""
     # Items without an Author (some Sources don't give one) each count as their own Author.
     authors = func.count(func.distinct(func.coalesce(Item.author, "item:" + cast(Item.id, Text))))
     query = (
@@ -467,7 +483,7 @@ async def list_ideas(
         .join(Item, Item.id == Signal.item_id)
         .where(Idea.merged_into_id.is_(None))
         .group_by(Idea.id)
-        .order_by(authors.desc(), Idea.last_seen.desc())
+        .order_by(Idea.score.desc().nulls_last(), authors.desc(), Idea.last_seen.desc())
         .limit(limit)
     )
     if state:
@@ -488,6 +504,8 @@ class IdeaDetail:
     idea: Idea
     related: list[tuple[Idea, float]]
     signals: list[SignalRow]
+    proposal: ProposedDecision | None
+    reviews: list[IdeaReview]
 
 
 async def idea_detail(session: AsyncSession, idea_id: int) -> IdeaDetail | None:
@@ -514,8 +532,19 @@ async def idea_detail(session: AsyncSession, idea_id: int) -> IdeaDetail | None:
             .order_by(IdeaSignal.similarity.desc().nulls_last(), Signal.id)
         )
     ).all()
+    proposal = await session.scalar(
+        select(ProposedDecision)
+        .where(ProposedDecision.idea_id == idea_id, ProposedDecision.status == "pending")
+        .order_by(ProposedDecision.created_at.desc())
+        .limit(1)
+    )
+    reviews = await session.scalars(
+        select(IdeaReview).where(IdeaReview.idea_id == idea_id).order_by(IdeaReview.id)
+    )
     return IdeaDetail(
         idea=idea,
         related=[(i, s or 0.0) for i, s in related],
         signals=[SignalRow(*row) for row in signals],
+        proposal=proposal,
+        reviews=list(reviews.all()),
     )
