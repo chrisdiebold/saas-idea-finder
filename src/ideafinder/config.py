@@ -105,6 +105,13 @@ class ValidationRules(_Strict):
     active_limit: int = Field(gt=0)
 
 
+class ClusteringRules(_Strict):
+    attach_similarity: float = Field(gt=0, lt=1)
+    related_similarity: float = Field(gt=0, lt=1)
+    min_cluster_size: int = Field(ge=2)
+    min_authors: int = Field(ge=1)
+
+
 class ScoringConfig(_Strict):
     weights: ScoringWeights
     thread_cap: int = Field(gt=0, description="Max Signals one Thread contributes to an Idea")
@@ -112,6 +119,7 @@ class ScoringConfig(_Strict):
     resurface: ResurfaceRule
     stale: StaleRule
     validation: ValidationRules
+    clustering: ClusteringRules
 
 
 # --- models.yaml ----------------------------------------------------------------------------

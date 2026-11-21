@@ -234,6 +234,159 @@ def extract(
     )
 
 
+@app.command()
+def cluster(
+    form: Annotated[
+        bool, typer.Option(help="Also cluster the holding pool into new Ideas (normally weekly).")
+    ] = True,
+) -> None:
+    """Embed new Signals, attach them to Ideas, and form new Ideas from the pool."""
+    from ideafinder.config import load_config
+    from ideafinder.db.engine import get_sessionmaker
+    from ideafinder.llm import LLM, ModelUnavailable
+    from ideafinder.pipeline.cluster import attach_pending, form_ideas
+    from ideafinder.pipeline.embed import embed_pending
+
+    _configure_logging()
+    _require_ready()
+    config = load_config(get_settings().config_dir)
+    rules = config.scoring.clustering
+
+    async def run():
+        async with LLM(config.models) as llm:
+            async with get_sessionmaker()() as session:
+                embedded = await embed_pending(session, llm)
+                attached = await attach_pending(session, rules)
+                formed = await form_ideas(session, llm, rules) if form else None
+                if formed and formed.created:
+                    # Pooled Signals may fit the new Ideas better than the HDBSCAN groups did.
+                    attached_after = await attach_pending(session, rules)
+                    attached.attached += attached_after.attached
+                return embedded, attached, formed
+
+    try:
+        embedded, attached, formed = asyncio.run(run())
+    except ModelUnavailable as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"Embedded {embedded} Signals · attached {attached.attached} to existing Ideas")
+    if formed:
+        typer.echo(
+            f"Pool of {formed.pool} Signals → {formed.groups} groups → "
+            f"{len(formed.created)} new Ideas ({formed.failed} couldn't be named)"
+        )
+
+
+ideas_app = typer.Typer(no_args_is_help=True, help="Look at Ideas, and Merge or Split them.")
+app.add_typer(ideas_app, name="ideas")
+
+
+def _ideas_session(fn):
+    from ideafinder.db.engine import get_sessionmaker
+
+    async def run():
+        async with get_sessionmaker()() as session:
+            return await fn(session)
+
+    return asyncio.run(run())
+
+
+@ideas_app.command("list")
+def ideas_list(
+    state: Annotated[
+        str | None, typer.Option(help="incubating / inbox / working / archived")
+    ] = None,
+    limit: Annotated[int, typer.Option(help="How many to show.")] = 50,
+) -> None:
+    """Ideas with the most Authors first."""
+    from ideafinder.pipeline.cluster import list_ideas
+
+    _require_ready()
+    rows = _ideas_session(lambda s: list_ideas(s, state, limit))
+    if not rows:
+        typer.echo("No Ideas yet. Run: ideafinder cluster")
+        return
+    typer.echo(f"{'id':>5}  {'authors':>7} {'signals':>7} {'comms':>5}  {'state':<11} title")
+    for r in rows:
+        typer.echo(
+            f"{r.idea.id:>5}  {r.authors:>7} {r.signals:>7} {r.communities:>5}  "
+            f"{r.idea.state:<11} {r.idea.title}"
+        )
+
+
+@ideas_app.command("show")
+def ideas_show(idea_id: Annotated[int, typer.Argument(help="Idea id.")]) -> None:
+    """An Idea's problem, Persona, Related Ideas and Signals."""
+    from ideafinder.pipeline.cluster import idea_detail
+
+    _require_ready()
+    detail = _ideas_session(lambda s: idea_detail(s, idea_id))
+    if detail is None:
+        typer.secho(f"✗ There's no Idea {idea_id}", fg="red", err=True)
+        raise typer.Exit(1)
+    idea = detail.idea
+    typer.secho(f"#{idea.id} {idea.title}", bold=True)
+    if idea.merged_into_id:
+        typer.echo(f"Merged into #{idea.merged_into_id}")
+    typer.echo(f"Problem: {idea.problem_statement}")
+    typer.echo(f"Persona: {idea.persona}")
+    seen = f"{idea.first_seen:%Y-%m-%d} – {idea.last_seen:%Y-%m-%d}" if idea.first_seen else "-"
+    typer.echo(f"State:   {idea.state} · seen {seen}")
+    for other, similarity in detail.related:
+        typer.echo(f"Related: #{other.id} {other.title} ({other.persona}) · {similarity:.2f}")
+    typer.echo(f"\n{len(detail.signals)} Signals:")
+    for s in detail.signals:
+        sim = f"{s.similarity:.2f}" if s.similarity is not None else "  - "
+        typer.echo(f"  {s.signal.id:>7} {sim} [{s.signal.kind}] {s.signal.problem_statement}")
+        typer.echo(f'          {s.source} · {s.author or "?"} · "{s.signal.quote[:140]}"')
+
+
+@ideas_app.command("merge")
+def ideas_merge(
+    source: Annotated[int, typer.Argument(help="Idea to merge away.")],
+    target: Annotated[int, typer.Argument(help="Idea that keeps its identity.")],
+) -> None:
+    """Merge one Idea into another. The target keeps its id and the more advanced state."""
+    from ideafinder.config import load_config
+    from ideafinder.pipeline.cluster import ClusterError, merge
+
+    _require_ready()
+    rules = load_config(get_settings().config_dir).scoring.clustering
+    try:
+        idea = _ideas_session(lambda s: merge(s, source, target, rules))
+    except ClusterError as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"Merged #{source} into #{idea.id} {idea.title} ({idea.state})")
+
+
+@ideas_app.command("split")
+def ideas_split(
+    idea_id: Annotated[int, typer.Argument(help="Idea to split.")],
+    signal_ids: Annotated[list[int], typer.Argument(help="Signal ids to move to a new Idea.")],
+) -> None:
+    """Move some Signals into a new Incubating Idea (see ids with: ideafinder ideas show ID)."""
+    from ideafinder.config import load_config
+    from ideafinder.db.engine import get_sessionmaker
+    from ideafinder.llm import LLM, ModelUnavailable
+    from ideafinder.pipeline.cluster import ClusterError, split
+
+    _require_ready()
+    config = load_config(get_settings().config_dir)
+
+    async def run():
+        async with LLM(config.models) as llm:
+            async with get_sessionmaker()() as session:
+                return await split(session, llm, idea_id, signal_ids, config.scoring.clustering)
+
+    try:
+        idea = asyncio.run(run())
+    except (ClusterError, ModelUnavailable) as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"Split {len(signal_ids)} Signals off #{idea_id} into #{idea.id} {idea.title}")
+
+
 eval_app = typer.Typer(no_args_is_help=True, help="The extraction test set (pick the local model).")
 app.add_typer(eval_app, name="eval")
 

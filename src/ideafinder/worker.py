@@ -67,29 +67,53 @@ EXTRACT_THREADS_PER_JOB = 25  # a few minutes of model time, so jobs stay short 
 @app.periodic(cron="*/10 * * * *", periodic_id="extract-signals")
 @app.task(queue=MODEL_QUEUE, name="extract_signals", queueing_lock="extract_signals")
 async def extract_signals(timestamp: int) -> dict:
-    """Work through the extraction backlog a little at a time, then embed the new Signals.
+    """Work through the extraction backlog a little at a time, embed the new Signals, and attach
+    them to existing Ideas.
 
     If LM Studio isn't running, the job fails quietly and the next one retries in 10 minutes.
     """
     from ideafinder.config import load_config
     from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.pipeline.cluster import attach_pending
     from ideafinder.pipeline.embed import embed_pending
     from ideafinder.pipeline.extract import extract_pending
 
     settings = get_settings()
+    config = load_config(settings.config_dir)
     try:
-        async with LLM(load_config(settings.config_dir).models) as llm:
+        async with LLM(config.models) as llm:
             async with get_sessionmaker()() as session:
                 report = await extract_pending(session, llm, EXTRACT_THREADS_PER_JOB)
                 embedded = await embed_pending(session, llm)
+                attached = await attach_pending(session, config.scoring.clustering)
     except ServerUnreachable as exc:
         return {"skipped": str(exc)}
     return {
         "items": report.items,
         "signals": report.signals,
         "embedded": embedded,
+        "attached": attached.attached,
         "failed_chunks": report.failed_chunks,
     }
+
+
+@app.periodic(cron="0 5 * * 1", periodic_id="form-ideas")
+@app.task(queue=MODEL_QUEUE, name="form_ideas", queueing_lock="form_ideas")
+async def form_ideas(timestamp: int) -> dict:
+    """Weekly: cluster the holding pool into new Incubating Ideas and name them."""
+    from ideafinder.config import load_config
+    from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.pipeline.cluster import form_ideas as form
+
+    settings = get_settings()
+    config = load_config(settings.config_dir)
+    try:
+        async with LLM(config.models) as llm:
+            async with get_sessionmaker()() as session:
+                report = await form(session, llm, config.scoring.clustering)
+    except ServerUnreachable as exc:
+        return {"skipped": str(exc)}
+    return {"pool": report.pool, "created": len(report.created), "failed": report.failed}
 
 
 @app.periodic(cron="0 6 * * *", periodic_id="daily-collect")

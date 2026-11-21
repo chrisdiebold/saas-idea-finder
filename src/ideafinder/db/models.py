@@ -152,6 +152,55 @@ class SignalCompetitor(Base):
     )
 
 
+class Idea(Base):
+    """A recurring problem experienced by one Persona (ADR 0001). Ids stay stable over time."""
+
+    __tablename__ = "ideas"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(Text)
+    problem_statement: Mapped[str] = mapped_column(Text)
+    persona: Mapped[str] = mapped_column(Text)
+    # incubating / inbox / working / archived (PLAN.md §7)
+    state: Mapped[str] = mapped_column(String(16), server_default="incubating", index=True)
+    seeded: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    merged_into_id: Mapped[int | None] = mapped_column(ForeignKey("ideas.id"), index=True)
+    # Mean of the member Signals' embeddings (problem + Persona); new Signals attach by it.
+    centroid: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
+    # The problem statement alone, so the same problem for another Persona is found as Related.
+    problem_embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
+    first_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_seen: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IdeaSignal(Base):
+    """Which Idea a Signal belongs to. A Signal belongs to at most one Idea."""
+
+    __tablename__ = "idea_signals"
+
+    signal_id: Mapped[int] = mapped_column(
+        ForeignKey("signals.id", ondelete="CASCADE"), primary_key=True
+    )
+    idea_id: Mapped[int] = mapped_column(ForeignKey("ideas.id", ondelete="CASCADE"), index=True)
+    similarity: Mapped[float | None]  # to the centroid when it attached; NULL if set by hand
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class IdeaRelation(Base):
+    """Related: same problem, different Personas. Each pair is stored once, lower id first."""
+
+    __tablename__ = "idea_relations"
+
+    idea_id: Mapped[int] = mapped_column(
+        ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
+    )
+    related_idea_id: Mapped[int] = mapped_column(
+        ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
+    )
+    similarity: Mapped[float | None]
+
+
 class EvalItem(Base):
     """An Item in the test set, with its answer-key labels."""
 
