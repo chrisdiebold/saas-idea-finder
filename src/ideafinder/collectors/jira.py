@@ -22,7 +22,9 @@ PROJECT_NAMES = {
 
 
 def parse_time(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
+    parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
+    # A few imported comments carry two-digit years ("0013-06-25"); they mean 20xx.
+    return parsed.replace(year=parsed.year + 2000) if parsed.year < 100 else parsed
 
 
 def _name(person: dict[str, Any] | None) -> str | None:

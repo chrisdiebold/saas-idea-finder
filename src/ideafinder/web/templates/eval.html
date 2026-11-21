@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Test set · SaaS Idea Finder{% endblock %}
+{% block content %}
+<style>
+  body { max-width: 860px; }
+  .bar { display: flex; gap: 16px; align-items: baseline; margin-bottom: 20px; }
+  .bar a { color: var(--muted); } .bar a.on { color: var(--fg); font-weight: 600; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 0 0 16px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+  .text { white-space: pre-wrap; max-height: 260px; overflow: auto; background: #fafafa;
+          border-radius: 6px; padding: 10px 12px; margin: 8px 0 12px; font-size: 14px; }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+  .draft { font-size: 13px; color: var(--muted); }
+  input[type=text] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+  button { padding: 6px 14px; border-radius: 6px; border: 1px solid #c7c7cc; background: #fff; cursor: pointer; }
+  button.primary { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+</style>
+<h1>Test set review</h1>
+<p class="sub">Confirm or correct my draft labels. A Signal means the author (or their organisation) has the
+problem: not agreement alone, advice to others, launches, news or general opinion.</p>
+<div class="bar">
+  <strong>{{ reviewed }} / {{ total }} reviewed</strong> · {{ changed }} changed by you ·
+  <a href="/eval?show=unreviewed" class="{{ 'on' if show == 'unreviewed' }}">Unreviewed</a>
+  <a href="/eval?show=changed" class="{{ 'on' if show == 'changed' }}">Changed</a>
+  <a href="/eval?show=all" class="{{ 'on' if show == 'all' }}">All</a>
+  <a href="/">Status</a>
+</div>
+{% if not cards %}<p class="ok">Nothing here. {% if show == 'unreviewed' %}All reviewed, thank you.{% endif %}</p>{% endif %}
+{% for c in cards %}
+<form class="card" method="post" action="/eval/{{ c.item.id }}" id="i{{ c.item.id }}">
+  <input type="hidden" name="show" value="{{ show }}">
+  <div class="meta">{{ c.source }} · {{ c.item.kind }}{% if c.item.author %} · by {{ c.item.author }}{% endif %}
+    · <a href="{{ c.item.url }}" target="_blank" rel="noopener">original</a></div>
+  {% if c.thread %}<div><strong>{{ c.thread }}</strong></div>{% endif %}
+  <div class="text">{% if c.item.title and c.item.kind != 'comment' and c.item.title != c.thread %}{{ c.item.title }}
+
+{% endif %}{{ c.item.body }}</div>
+  <div class="draft">Draft: {{ "Signal (" ~ (c.label.kinds | join(", ")) ~ ")" if c.label.has_signal else "no Signal" }}{% if c.label.note %} · {{ c.label.note }}{% endif %}{% if c.label.reviewed_at %} · reviewed{% endif %}</div>
+  <div class="row">
+    <label><input type="radio" name="has_signal" value="yes" {{ 'checked' if c.label.has_signal }}> Signal</label>
+    <label><input type="radio" name="has_signal" value="no" {{ 'checked' if c.label.has_signal == false }}> No Signal</label>
+    <span>—</span>
+    {% for k in kinds %}<label><input type="checkbox" name="kinds" value="{{ k }}" {{ 'checked' if k in (c.label.kinds or []) }}> {{ k }}</label>{% endfor %}
+  </div>
+  <div class="row"><input type="text" name="note" value="{{ c.label.note or '' }}" placeholder="Note (optional)"></div>
+  <div class="row"><button class="primary" type="submit">Save &amp; next</button></div>
+</form>
+{% endfor %}
+{% endblock %}

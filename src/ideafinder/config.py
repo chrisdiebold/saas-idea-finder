@@ -116,9 +116,10 @@ class ScoringConfig(_Strict):
 
 # --- models.yaml ----------------------------------------------------------------------------
 
-ProviderName = Literal["ollama", "anthropic", "manual"]
+ProviderName = Literal["lmstudio", "anthropic", "manual"]
 TaskName = Literal[
     "extract",
+    "embed",
     "name_idea",
     "fit_check",
     "propose_decision",

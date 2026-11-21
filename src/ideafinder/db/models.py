@@ -3,8 +3,10 @@
 from datetime import datetime
 from typing import Any
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     ForeignKey,
     Integer,
@@ -83,6 +85,103 @@ class Item(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     raw: Mapped[dict[str, Any]]
+    # Prefilter outcome (M2): keep (send to extraction) / drop / vote (counts as a Vote on the
+    # Thread's root Item) / market (a launch; used for Competitors, not extraction). NULL = not yet.
+    prefilter: Mapped[str | None] = mapped_column(String(8), index=True)
+    prefilter_reason: Mapped[str | None] = mapped_column(String(32))
+    extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+EMBEDDING_DIM = 768  # nomic-embed-text-v1.5, served by LM Studio
+
+
+class Signal(Base):
+    """One piece of evidence taken from an Item (see GLOSSARY.md)."""
+
+    __tablename__ = "signals"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # pain / request / complaint / payment / market
+    problem_statement: Mapped[str] = mapped_column(Text)
+    persona: Mapped[str] = mapped_column(Text)
+    intensity: Mapped[int] = mapped_column(SmallInteger)
+    quote: Mapped[str] = mapped_column(Text)
+    quote_verified: Mapped[bool] = mapped_column(Boolean)  # the quote really appears in the Item
+    workaround: Mapped[str | None] = mapped_column(Text)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIM))
+    model: Mapped[str] = mapped_column(String(200))
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Competitor(Base):
+    """An existing product; one per product, shared across Ideas."""
+
+    __tablename__ = "competitors"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    url: Mapped[str | None] = mapped_column(Text)
+    pricing: Mapped[str | None] = mapped_column(Text)
+    created_from: Mapped[str] = mapped_column(String(16))  # mention / briefing / manual
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CompetitorAlias(Base):
+    """A normalised name or domain that identifies a Competitor ("jobber", "getjobber")."""
+
+    __tablename__ = "competitor_aliases"
+
+    alias: Mapped[str] = mapped_column(String(200), primary_key=True)
+    competitor_id: Mapped[int] = mapped_column(
+        ForeignKey("competitors.id", ondelete="CASCADE"), index=True
+    )
+
+
+class SignalCompetitor(Base):
+    """A product named in a Signal (Complaint Signals are about it; others just mention it)."""
+
+    __tablename__ = "signal_competitors"
+
+    signal_id: Mapped[int] = mapped_column(
+        ForeignKey("signals.id", ondelete="CASCADE"), primary_key=True
+    )
+    competitor_id: Mapped[int] = mapped_column(
+        ForeignKey("competitors.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class EvalItem(Base):
+    """An Item in the test set, with its answer-key labels."""
+
+    __tablename__ = "eval_items"
+
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("items.id", ondelete="CASCADE"), primary_key=True
+    )
+    has_signal: Mapped[bool | None] = mapped_column(Boolean)
+    kinds: Mapped[list[Any]] = mapped_column(server_default="[]")
+    note: Mapped[str | None] = mapped_column(Text)
+    labelled_by: Mapped[str | None] = mapped_column(String(16))  # claude / you
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class EvalResult(Base):
+    """One model's answer for one test Item."""
+
+    __tablename__ = "eval_results"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run: Mapped[str] = mapped_column(String(64), index=True)  # e.g. "qwen3.6-35b-a3b@2026-11-21"
+    model: Mapped[str] = mapped_column(String(200))
+    item_id: Mapped[int] = mapped_column(ForeignKey("items.id", ondelete="CASCADE"))
+    predicted_signal: Mapped[bool]
+    predicted_kinds: Mapped[list[Any]] = mapped_column(server_default="[]")
+    output: Mapped[dict[str, Any]]
+    seconds: Mapped[float]
+    output_tokens: Mapped[int | None]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class CollectorCursor(Base):

@@ -22,3 +22,6 @@ backups/
 .DS_Store
 .idea/
 .vscode/
+
+# Test-set Items contain third-party posts; only the labels file is committed
+tests/eval/items.jsonl

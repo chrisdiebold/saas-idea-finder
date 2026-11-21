@@ -44,7 +44,7 @@ def test_every_task_needs_a_route(config_copy):
 
 
 def test_tasks_must_use_configured_providers(config_copy):
-    _edit(config_copy / "models.yaml", lambda d: d["providers"].pop("ollama"))
+    _edit(config_copy / "models.yaml", lambda d: d["providers"].pop("lmstudio"))
     with pytest.raises(ConfigError, match="providers that aren't configured"):
         load_config(config_copy)
 

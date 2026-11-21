@@ -1,19 +1,21 @@
 # Which provider and model handles each task. See PLAN.md §2 (LLM routing).
-# The local model is chosen by the M2 eval; until then `model` is left empty.
+# Local tasks run on LM Studio's server (start it with: lms server start).
+# The extraction model is chosen by the M2 eval (ideafinder eval report).
 
 providers:
-  ollama:
-    base_url: http://localhost:11434/v1
+  lmstudio:
+    base_url: http://localhost:1234/v1
   anthropic: {}   # needs ANTHROPIC_API_KEY; not used yet
   manual: {}      # copy-paste through claude.ai
 
 tasks:
-  extract:          {provider: ollama}
-  name_idea:        {provider: ollama}
-  fit_check:        {provider: ollama}
-  propose_decision: {provider: ollama}
-  summary:          {provider: ollama}
-  industry_codes:   {provider: ollama}
-  lead_opener:      {provider: ollama}
-  validation_kit:   {provider: ollama}
+  extract:          {provider: lmstudio, model: qwen/qwen3.6-35b-a3b}   # provisional until the eval
+  embed:            {provider: lmstudio, model: text-embedding-nomic-embed-text-v1.5}
+  name_idea:        {provider: lmstudio}
+  fit_check:        {provider: lmstudio}
+  propose_decision: {provider: lmstudio}
+  summary:          {provider: lmstudio}
+  industry_codes:   {provider: lmstudio}
+  lead_opener:      {provider: lmstudio}
+  validation_kit:   {provider: lmstudio}
   briefing:         {provider: manual}

@@ -1,0 +1,200 @@
+{"source": "hackernews", "external_id": "50573090", "has_signal": false, "kinds": [], "note": "general opinion about languages"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-77615/comment/3431221", "has_signal": false, "kinds": [], "note": "agreement, nothing added"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-69084/comment/3182396", "has_signal": false, "kinds": [], "note": "agreement, nothing added"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-45296", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-20163/comment/1344821", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-78044/comment/3395692", "has_signal": false, "kinds": [], "note": "agreement, nothing added"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-1991/comment/3316594", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-94412/comment/3618185", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-61857", "has_signal": true, "kinds": ["request", "complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-61857/comment/1430700", "has_signal": false, "kinds": [], "note": "workaround shared with others"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-43158/comment/1417492", "has_signal": false, "kinds": [], "note": "advice to others"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-25060/comment/3289786", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-89914/comment/3905613", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-90344/comment/1476692", "has_signal": false, "kinds": [], "note": "argument, not own problem"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-84410", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-85090/comment/3694260", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-74471/comment/3807320", "has_signal": false, "kinds": [], "note": "clarifying question"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-83145/comment/3544641", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-88154/comment/2936391", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-4812/comment/1300118", "has_signal": true, "kinds": ["request"], "note": "asks for workaround to missing feature"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-91595/comment/2703303", "has_signal": false, "kinds": [], "note": "mostly +1"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-23030", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-6798/comment/1277209", "has_signal": true, "kinds": ["pain", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-7266/comment/1343959", "has_signal": false, "kinds": [], "note": "meta-discussion about roadmap"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-36740/comment/2293696", "has_signal": true, "kinds": ["pain", "request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-10507/comment/3474484", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-87237", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-69079", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-81876", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-34588", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-20118/comment/1180397", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-11740/comment/1916763", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-83468", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-75154/comment/3485713", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-5002/comment/1220399", "has_signal": false, "kinds": [], "note": "mostly +1"}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-7681/comment/1161308", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-78513/comment/3081261", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JSWCLOUD-18871/comment/3428815", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/defunct-mcp-shipped-with-latest-woocommerce-11-0-1-autoloads-and-breaks-site/", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:94958", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:94966", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:94994", "has_signal": true, "kinds": ["request", "payment"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95018", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95030", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95050", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95115", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95130", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95168", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95200", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95229", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95302", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95303", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95357", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95367", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95483", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95572", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95671", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/make-blog-link-appear-in-header-navigation-boutique-theme/", "has_signal": false, "kinds": [], "note": "how-to question; the product already does this"}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/woo-product-gallery-displays-several-seconds-after-the-main-image-has-loaded/", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/woocommerce-version-compatibility-issue/", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "stackexchange", "external_id": "softwarerecs:95722", "has_signal": true, "kinds": ["request", "payment"], "note": "free or low one-time cost"}
+{"source": "stackexchange", "external_id": "softwarerecs:95772", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/does-not-support-my-version-of-php/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/used-to-be-the-best-5/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/from-neglect-to-php-8-3-whiplash-contact-form-7-has-lost-my-trust/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/hard-to-style-2/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/the-message-sent-does-not-reach-its-destination/", "has_signal": true, "kinds": ["pain", "complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/disallowed-comment-keys-3/", "has_signal": true, "kinds": ["pain", "request"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/bloats-your-website-free-unusable/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/elementor-mcp-great-idea-difficult-setup/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/money-4/", "has_signal": true, "kinds": ["complaint", "payment"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/still-leading-in-some-aspects-while-playing-catch-up-in-others/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "hackernews", "external_id": "49353879", "has_signal": false, "kinds": [], "note": "answers someone else"}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/editor-takes-20-s-to-load-on-an-empty-page-editor-atomic-many-global-classes/", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/elementor-4-4-0-icon-library-completely-empty-icons-not-loading/", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/elementor-4-4-0-woocommerce-checkout-page-editor-stuck-loading-fix-identified/", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-96325", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-91282/comment/1501129", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/terrible-customer-service-after-10-years-with-yoast/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-88171/comment/1072467", "has_signal": true, "kinds": ["pain", "request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-97814", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/bug-article-image-and-ogimage-missing-when-the-first-content-image-url-conta/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "wordpress", "external_id": "https://wordpress.org/support/topic/sitemap-date-2/", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-96924", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "47431704", "has_signal": false, "kinds": [], "note": "answers someone else"}
+{"source": "hackernews", "external_id": "47374294", "has_signal": true, "kinds": ["pain", "request"], "note": null}
+{"source": "hackernews", "external_id": "47204934", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "hackernews", "external_id": "47118330", "has_signal": false, "kinds": [], "note": "general opinion"}
+{"source": "hackernews", "external_id": "47111687", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "hackernews", "external_id": "46566062", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "hackernews", "external_id": "46211335", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-98382", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-94423", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "hackernews", "external_id": "49831218", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "hackernews", "external_id": "48212785", "has_signal": true, "kinds": ["payment"], "note": "payment intent, thin"}
+{"source": "hackernews", "external_id": "46499915", "has_signal": true, "kinds": ["request", "payment"], "note": null}
+{"source": "hackernews", "external_id": "50132055", "has_signal": false, "kinds": [], "note": "argument"}
+{"source": "hackernews", "external_id": "48570722", "has_signal": false, "kinds": [], "note": "general opinion"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-45531/comment/3508097", "has_signal": true, "kinds": ["request"], "note": "has the need now"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-97168", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "48672753", "has_signal": false, "kinds": [], "note": "argument"}
+{"source": "hackernews", "external_id": "46690321", "has_signal": false, "kinds": [], "note": "critique of someone's launch"}
+{"source": "hackernews", "external_id": "46174198", "has_signal": false, "kinds": [], "note": "launch post by the builder (Market)"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-68223/comment/1702715", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-96150", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-83109/comment/3496004", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-68100/comment/1943239", "has_signal": false, "kinds": [], "note": "support meta"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-99475", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "50273119", "has_signal": false, "kinds": [], "note": "not a software problem"}
+{"source": "hackernews", "external_id": "50022296", "has_signal": false, "kinds": [], "note": "launch/news"}
+{"source": "hackernews", "external_id": "49987577", "has_signal": false, "kinds": [], "note": "argument"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-85659", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "49868224", "has_signal": false, "kinds": [], "note": "discussion"}
+{"source": "hackernews", "external_id": "49746527", "has_signal": false, "kinds": [], "note": "list of tools used"}
+{"source": "hackernews", "external_id": "49605770", "has_signal": false, "kinds": [], "note": "launch/news"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-95877", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "49096698", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "49031533", "has_signal": false, "kinds": [], "note": "argument"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-40464", "has_signal": true, "kinds": ["request", "pain", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "48830507", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-97708", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "48446000", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "48416546", "has_signal": false, "kinds": [], "note": "off-topic"}
+{"source": "hackernews", "external_id": "48374751", "has_signal": false, "kinds": [], "note": "critique of a project"}
+{"source": "hackernews", "external_id": "48344033", "has_signal": false, "kinds": [], "note": "recommendation to others"}
+{"source": "hackernews", "external_id": "48332561", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-59014", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "48273766", "has_signal": false, "kinds": [], "note": "policy argument"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-36007/comment/1443996", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-94922/comment/3695513", "has_signal": false, "kinds": [], "note": "vendor reply"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-94942/comment/2641247", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "hackernews", "external_id": "48109014", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-99988", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "47935998", "has_signal": false, "kinds": [], "note": "discussion"}
+{"source": "hackernews", "external_id": "47929909", "has_signal": false, "kinds": [], "note": "off-topic"}
+{"source": "hackernews", "external_id": "47868530", "has_signal": false, "kinds": [], "note": "discussion"}
+{"source": "hackernews", "external_id": "47809959", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "47666811", "has_signal": true, "kinds": ["request"], "note": "looking for alternatives"}
+{"source": "hackernews", "external_id": "47342982", "has_signal": false, "kinds": [], "note": "off-topic"}
+{"source": "hackernews", "external_id": "47327009", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "47322898", "has_signal": false, "kinds": [], "note": "advice"}
+{"source": "hackernews", "external_id": "47300092", "has_signal": false, "kinds": [], "note": "news"}
+{"source": "hackernews", "external_id": "47182275", "has_signal": false, "kinds": [], "note": "argument"}
+{"source": "hackernews", "external_id": "47174789", "has_signal": false, "kinds": [], "note": "recommendation to others"}
+{"source": "hackernews", "external_id": "47141255", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "47116199", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "47047405", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-43296", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "46975239", "has_signal": false, "kinds": [], "note": "news"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-90857", "has_signal": true, "kinds": ["request", "complaint", "pain"], "note": null}
+{"source": "hackernews", "external_id": "46755341", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "46741876", "has_signal": false, "kinds": [], "note": "launch"}
+{"source": "hackernews", "external_id": "46700251", "has_signal": false, "kinds": [], "note": "launch by the builder"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-81007", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-5494/comment/1310013", "has_signal": false, "kinds": [], "note": "argument for the request, not own need"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-30197", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-30197/comment/1423632", "has_signal": false, "kinds": [], "note": "vendor reply"}
+{"source": "hackernews", "external_id": "49356751", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-88030", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "hackernews", "external_id": "47797632", "has_signal": true, "kinds": ["pain"], "note": null}
+{"source": "hackernews", "external_id": "47445037", "has_signal": false, "kinds": [], "note": "advocacy"}
+{"source": "hackernews", "external_id": "47382596", "has_signal": false, "kinds": [], "note": "sharing a workflow"}
+{"source": "hackernews", "external_id": "47193420", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "jira_atlassian", "external_id": "JRACLOUD-96247/comment/3709788", "has_signal": true, "kinds": ["complaint", "request"], "note": null}
+{"source": "hackernews", "external_id": "46503438", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "46087132", "has_signal": false, "kinds": [], "note": "advice"}
+{"source": "hackernews", "external_id": "49892204", "has_signal": false, "kinds": [], "note": "news"}
+{"source": "hackernews", "external_id": "49687339", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "49584660", "has_signal": false, "kinds": [], "note": "off-topic"}
+{"source": "hackernews", "external_id": "49105165", "has_signal": false, "kinds": [], "note": "feedback on someone's launch"}
+{"source": "hackernews", "external_id": "48539344", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "47801912", "has_signal": false, "kinds": [], "note": "argument"}
+{"source": "hackernews", "external_id": "47533223", "has_signal": false, "kinds": [], "note": "off-topic"}
+{"source": "hackernews", "external_id": "47124752", "has_signal": false, "kinds": [], "note": "advice"}
+{"source": "hackernews", "external_id": "47108259", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "46460527", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "46180948", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "hackernews", "external_id": "50018914", "has_signal": true, "kinds": ["request", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-208", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-28812/comment/1215910", "has_signal": false, "kinds": [], "note": "bump"}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-83061", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-37125/comment/1216506", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-84564", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-79236", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-78222/comment/3481154", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-50282/comment/2000207", "has_signal": false, "kinds": [], "note": "vendor reply"}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-83084", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-75290", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-62535/comment/1978191", "has_signal": false, "kinds": [], "note": "agreement, nothing added"}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-36873/comment/3365279", "has_signal": true, "kinds": ["pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-81187/comment/3589618", "has_signal": false, "kinds": [], "note": "opinion"}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-80716", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-79817", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-71449/comment/3455977", "has_signal": true, "kinds": ["request"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-1726/comment/1657378", "has_signal": true, "kinds": ["complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-22983/comment/3557966", "has_signal": true, "kinds": ["complaint", "pain"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-23801", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-80695", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "CONFCLOUD-1095", "has_signal": true, "kinds": ["request", "complaint"], "note": null}
+{"source": "jira_atlassian", "external_id": "JSWCLOUD-8507", "has_signal": true, "kinds": ["request", "complaint"], "note": null}

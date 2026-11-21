@@ -169,3 +169,10 @@ async def test_stackexchange_stops_before_quota_runs_out():
     stream = QuestionStream(http, "softwarerecs", "k", "questions", {}, None)
     with pytest.raises(SourceGone, match="quota"):
         await collect(stream)
+
+
+def test_jira_two_digit_years_mean_2000s():
+    from ideafinder.collectors.jira import parse_time
+
+    assert parse_time("0013-06-25T01:27:00.000+0000").year == 2013
+    assert parse_time("2026-11-20T09:00:00.000+0000").year == 2026

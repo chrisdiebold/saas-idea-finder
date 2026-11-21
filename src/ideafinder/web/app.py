@@ -8,10 +8,12 @@ from fastapi.templating import Jinja2Templates
 
 from ideafinder.settings import get_settings
 from ideafinder.status import get_status
+from ideafinder.web.routes import eval as eval_routes
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 app = FastAPI(title="SaaS Idea Finder", docs_url=None, redoc_url=None)
+app.include_router(eval_routes.router)
 
 
 # Plain `def` routes: status checks use blocking database calls, so FastAPI runs them in a thread.

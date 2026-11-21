@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import logging
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -174,6 +175,148 @@ def collect(
             typer.secho(f"    {error}", fg=colour)
     if any(r.status == "failed" for r in reports):
         raise typer.Exit(1)
+
+
+@app.command()
+def prefilter(
+    redo: Annotated[
+        bool, typer.Option(help="Re-decide Items not yet extracted (after changing the rules).")
+    ] = False,
+) -> None:
+    """Decide which newly collected Items go to extraction (no model needed)."""
+    from ideafinder.db.engine import get_sessionmaker
+    from ideafinder.pipeline.prefilter import prefilter_pending, reset_unextracted
+
+    _require_ready()
+
+    async def run() -> dict[str, int]:
+        async with get_sessionmaker()() as session:
+            if redo:
+                await reset_unextracted(session)
+            return await prefilter_pending(session)
+
+    counts = asyncio.run(run())
+    if not counts:
+        typer.echo("Nothing new to prefilter.")
+    for key, n in sorted(counts.items(), key=lambda kv: -kv[1]):
+        typer.echo(f"{key:<24}{n:>8}")
+
+
+@app.command()
+def extract(
+    threads: Annotated[int, typer.Option(help="How many Threads to process.")] = 20,
+    model: Annotated[str | None, typer.Option(help="Override the configured model.")] = None,
+) -> None:
+    """Extract Signals from kept Items with the local model (LM Studio must be running)."""
+    from ideafinder.config import load_config
+    from ideafinder.db.engine import get_sessionmaker
+    from ideafinder.llm import LLM, ModelUnavailable
+    from ideafinder.pipeline.extract import extract_pending
+
+    _configure_logging()
+    _require_ready()
+    settings = get_settings()
+
+    async def run():
+        async with LLM(load_config(settings.config_dir).models) as llm:
+            async with get_sessionmaker()() as session:
+                return await extract_pending(session, llm, threads, model)
+
+    try:
+        r = asyncio.run(run())
+    except ModelUnavailable as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    rate = f", {r.output_tokens / r.seconds:.0f} output tokens/s" if r.seconds else ""
+    typer.echo(
+        f"{r.chunks} chunks · {r.items} Items · {r.signals} Signals {r.by_kind} · "
+        f"{r.failed_chunks} failed · {r.seconds:.0f}s{rate}"
+    )
+
+
+eval_app = typer.Typer(no_args_is_help=True, help="The extraction test set (pick the local model).")
+app.add_typer(eval_app, name="eval")
+
+
+def _eval_session(fn):
+    from ideafinder.db.engine import get_sessionmaker
+
+    async def run():
+        async with get_sessionmaker()() as session:
+            return await fn(session)
+
+    return asyncio.run(run())
+
+
+@eval_app.command("sample")
+def eval_sample() -> None:
+    """Draw ~200 test Items across Sources (keeps any already-labelled ones)."""
+    from ideafinder.pipeline.evaluation import sample
+
+    _require_ready()
+    for (source, kind), n in _eval_session(sample).items():
+        typer.echo(f"{source:<16}{kind:<10}{n:>4}")
+
+
+@eval_app.command("export")
+def eval_export(path: Annotated[Path, typer.Argument(help="JSON Lines file to write.")]) -> None:
+    """Write the test Items and any labels to a JSON Lines file."""
+    from ideafinder.pipeline.evaluation import export_items
+
+    n = _eval_session(lambda s: export_items(s, path))
+    typer.echo(f"Wrote {n} test Items to {path}")
+
+
+@eval_app.command("import")
+def eval_import(
+    path: Annotated[Path, typer.Argument(help="JSON Lines file with labels.")],
+    by: Annotated[str, typer.Option(help="Who labelled them: claude or you.")] = "you",
+) -> None:
+    """Load labels for the test Items."""
+    from ideafinder.pipeline.evaluation import import_labels
+
+    n = _eval_session(lambda s: import_labels(s, path, by))
+    typer.echo(f"Imported {n} labels")
+
+
+@eval_app.command("run")
+def eval_run(model: Annotated[str, typer.Argument(help="LM Studio model id.")]) -> None:
+    """Run one model over every labelled test Item."""
+    from ideafinder.config import load_config
+    from ideafinder.db.engine import get_sessionmaker
+    from ideafinder.llm import LLM
+    from ideafinder.pipeline.evaluation import run_model, run_name
+
+    _configure_logging()
+    settings = get_settings()
+
+    async def run():
+        async with LLM(load_config(settings.config_dir).models) as llm:
+            async with get_sessionmaker()() as session:
+                return await run_model(session, llm, model, run_name(model))
+
+    typer.echo(f"Scored {asyncio.run(run())} Items. See: ideafinder eval report")
+
+
+@eval_app.command("report")
+def eval_report() -> None:
+    """Compare models on the test set."""
+    from ideafinder.pipeline.evaluation import report
+
+    scores = _eval_session(report)
+    if not scores:
+        typer.echo("No runs yet. Label the test set, then: ideafinder eval run <model>")
+        return
+    typer.echo(
+        f"{'run':<36}{'items':>6}{'precision':>11}{'recall':>8}{'F1':>6}"
+        f"{'kinds':>7}{'s/item':>8}{'tok/s':>7}"
+    )
+    for s in scores:
+        tps = f"{s.output_tokens_per_second:.0f}" if s.output_tokens_per_second else "-"
+        typer.echo(
+            f"{s.run:<36}{s.items:>6}{s.precision:>11.0%}{s.recall:>8.0%}{s.f1:>6.2f}"
+            f"{s.kind_agreement:>7.0%}{s.median_seconds:>8.1f}{tps:>7}"
+        )
 
 
 @db_app.command("upgrade")

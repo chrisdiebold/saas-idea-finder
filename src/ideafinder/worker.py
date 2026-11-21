@@ -48,7 +48,48 @@ async def collect_sources(source_keys: list[str] | None = None) -> dict:
 
     settings = get_settings()
     reports = await collect(load_config(settings.config_dir), settings, source_keys)
+    await prefilter_items.defer_async()
     return {r.source: r.status for r in reports}
+
+
+@app.task(queue=COLLECT_QUEUE, name="prefilter_items", queueing_lock="prefilter_items")
+async def prefilter_items() -> dict[str, int]:
+    """Decide which new Items go to extraction. Fast and model-free, so it runs on `collect`."""
+    from ideafinder.pipeline.prefilter import prefilter_pending
+
+    async with get_sessionmaker()() as session:
+        return await prefilter_pending(session)
+
+
+EXTRACT_THREADS_PER_JOB = 25  # a few minutes of model time, so jobs stay short and resumable
+
+
+@app.periodic(cron="*/10 * * * *", periodic_id="extract-signals")
+@app.task(queue=MODEL_QUEUE, name="extract_signals", queueing_lock="extract_signals")
+async def extract_signals(timestamp: int) -> dict:
+    """Work through the extraction backlog a little at a time, then embed the new Signals.
+
+    If LM Studio isn't running, the job fails quietly and the next one retries in 10 minutes.
+    """
+    from ideafinder.config import load_config
+    from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.pipeline.embed import embed_pending
+    from ideafinder.pipeline.extract import extract_pending
+
+    settings = get_settings()
+    try:
+        async with LLM(load_config(settings.config_dir).models) as llm:
+            async with get_sessionmaker()() as session:
+                report = await extract_pending(session, llm, EXTRACT_THREADS_PER_JOB)
+                embedded = await embed_pending(session, llm)
+    except ServerUnreachable as exc:
+        return {"skipped": str(exc)}
+    return {
+        "items": report.items,
+        "signals": report.signals,
+        "embedded": embedded,
+        "failed_chunks": report.failed_chunks,
+    }
 
 
 @app.periodic(cron="0 6 * * *", periodic_id="daily-collect")
