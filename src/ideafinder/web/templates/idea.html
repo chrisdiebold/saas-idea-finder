@@ -104,6 +104,14 @@
   <p class="small muted">Appears after two weekly snapshots.</p>
   {% endif %}
 
+  {% if searches %}
+  <h3>Google searches</h3>
+  {% if search_line %}<svg class="trend" viewBox="0 0 240 48" preserveAspectRatio="none" role="img" aria-label="Weekly Google search interest, last 12 months"><polyline points="{{ search_line }}"/></svg>{% endif %}
+  <p class="small muted">US, last 12 months, for: {{ searches.terms | join(", ") }}.
+    {% if searches.ratio is not none %}Last 4 weeks {{ "%+d" | format(((searches.ratio - 1) * 100) | round | int) }}% on the 4 before.{% else %}Too little search interest to compare.{% endif %}
+    Checked {{ searches.fetched_at.strftime("%-d %b") }}.</p>
+  {% endif %}
+
   {% if idea.fit %}
   <h3>Fit</h3>
   <p>{{ idea.fit.notes }}</p>

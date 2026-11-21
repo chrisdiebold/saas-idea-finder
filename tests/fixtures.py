@@ -64,6 +64,7 @@ DEFAULT_ANSWERS = {
         "quotes": [1],
         "payment_note": "No sign of paying.",
         "verdict": "Look closer.",
+        "search_terms": ["a problem app"],
     },
 }
 

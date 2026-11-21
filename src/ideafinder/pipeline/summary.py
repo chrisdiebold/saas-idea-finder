@@ -36,7 +36,9 @@ using only the evidence given.
   (prefer different people and specifics over general grumbling).
 - payment_note: one sentence on willingness to pay: what people pay now, say they'd pay, or that
   there's no sign of it.
-- verdict: one sentence a busy person can act on."""
+- verdict: one sentence a busy person can act on.
+- search_terms: 2 or 3 short phrases (2–4 words) this Persona would type into Google when the
+  problem bites, in their words, e.g. "crew scheduling app", not product names."""
 
 SCHEMA = {
     "type": "object",
@@ -46,8 +48,9 @@ SCHEMA = {
         "quotes": {"type": "array", "items": {"type": "integer"}},
         "payment_note": {"type": "string"},
         "verdict": {"type": "string"},
+        "search_terms": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["problem", "persona", "quotes", "payment_note", "verdict"],
+    "required": ["problem", "persona", "quotes", "payment_note", "verdict", "search_terms"],
     "additionalProperties": False,
 }
 
@@ -125,6 +128,9 @@ async def summarize(session: AsyncSession, llm: LLM, idea: Idea, e: Evidence | N
         ],
         "payment_note": d["payment_note"].strip(),
         "verdict": d["verdict"].strip(),
+        "search_terms": [
+            t.strip().lower() for t in d.get("search_terms", [])[:3] if t and t.strip()
+        ],
     }
     idea.summary_updated_at = datetime.now(UTC)
     idea.summary_signal_count = e.signals if e else None

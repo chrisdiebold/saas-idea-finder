@@ -18,6 +18,7 @@ from ideafinder.db.models import (
     IdeaReview,
     IdeaSignal,
     IdeaSnapshot,
+    IdeaTrend,
     ProposedDecision,
     SignalCompetitor,
 )
@@ -307,6 +308,12 @@ async def new_idea(
 # --- Idea detail ----------------------------------------------------------------------------
 
 
+def _search_scale(totals: list[int]) -> list[float]:
+    """Summed interest of several terms, rescaled to 0-100 for the sparkline."""
+    top = max(totals) or 1
+    return [100 * t / top for t in totals]
+
+
 def sparkline(values: list[float], width: int = 240, height: int = 48) -> str | None:
     """SVG polyline points for a score trend (0-100), or None with fewer than two points."""
     if len(values) < 2:
@@ -347,6 +354,12 @@ async def idea_page(request: Request, idea_id: int) -> HTMLResponse:
             )
         ).all()
         trend = [s.score for s in snapshots if s.score is not None]
+        searches = await session.get(IdeaTrend, idea_id)
+        search_line = (
+            sparkline(_search_scale([sum(w["values"].values()) for w in searches.weeks]))
+            if searches and searches.weeks
+            else None
+        )
         briefing_done = await latest(session, idea_id, "complete")
         briefing_waiting = await latest(session, idea_id, "awaiting_response")
         return await render(
@@ -360,6 +373,8 @@ async def idea_page(request: Request, idea_id: int) -> HTMLResponse:
             trend=sparkline(trend),
             targets=await merge_targets(session, exclude=idea_id),
             briefing_done=briefing_done,
+            searches=searches,
+            search_line=search_line,
             briefing_waiting=briefing_waiting,
         )
 

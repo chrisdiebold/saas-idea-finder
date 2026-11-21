@@ -10,7 +10,8 @@ the score a lot and the fiftieth barely does.
 - Intensity: mean Signal intensity, plus Votes relative to what's normal in each Community
   (agreement replies count as Votes on the Thread's root Item). Votes never count as Authors.
 - Payment: Payment Signals, a business Persona (from the Fit check), Competitors that charge.
-- Momentum: Signals in the last 4 weeks vs. the 4 before.
+- Momentum: Signals in the last 4 weeks vs. the 4 before, blended half-and-half with Google
+  search interest for the Idea's search terms where Trends data exists (M10).
 - Competitive gap: Complaint Signals relative to the number of Competitors.
 - Fit and Solo-buildable: from the Fit check; 0.5 until there is one.
 """
@@ -59,6 +60,7 @@ class Evidence:
     prior: int  # the MOMENTUM_DAYS before that
     competitors: int
     paid_competitors: int
+    trend_ratio: float | None = None  # Google search interest, last 4 weeks vs the 4 before
 
 
 def components(e: Evidence, fit: dict[str, Any] | None) -> dict[str, float]:
@@ -71,6 +73,8 @@ def components(e: Evidence, fit: dict[str, Any] | None) -> dict[str, float]:
     else:
         ratio = (e.recent + 1) / (e.prior + 1)
         momentum = ratio / (1 + ratio)  # 0.5 when flat, 0.75 at 3×
+    if e.trend_ratio is not None:  # half Signals, half Google search interest
+        momentum = 0.5 * momentum + 0.5 * e.trend_ratio / (1 + e.trend_ratio)
     return {
         "volume": 0.7 * saturate(e.capped_authors, HALF_AUTHORS)
         + 0.3 * saturate(e.capped_recent_signals, HALF_RECENT_SIGNALS),
@@ -162,9 +166,11 @@ SELECT s.idea_id,
        count(*) FILTER (WHERE s.created_at >= :prior_since AND s.created_at < :momentum_since)
            AS prior,
        coalesce(max(c.competitors), 0) AS competitors,
-       coalesce(max(c.paid_competitors), 0) AS paid_competitors
+       coalesce(max(c.paid_competitors), 0) AS paid_competitors,
+       max(t.ratio) AS trend_ratio
 FROM scored s
 LEFT JOIN competition c ON c.idea_id = s.idea_id
+LEFT JOIN idea_trends t ON t.idea_id = s.idea_id
 GROUP BY s.idea_id
 """
 

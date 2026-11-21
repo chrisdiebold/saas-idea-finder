@@ -449,6 +449,24 @@ class ValidationKit(Base):
     )
 
 
+class IdeaTrend(Base):
+    """Google search interest for an Idea's search terms (Google Trends, weekly, 0-100 scaled).
+
+    Feeds the Momentum part of the score: the last 4 complete weeks against the 4 before.
+    """
+
+    __tablename__ = "idea_trends"
+
+    idea_id: Mapped[int] = mapped_column(
+        ForeignKey("ideas.id", ondelete="CASCADE"), primary_key=True
+    )
+    terms: Mapped[list[Any]]
+    geo: Mapped[str] = mapped_column(String(8))
+    weeks: Mapped[list[Any]]  # [{"week": "2026-11-01", "values": {term: 0-100}}], oldest first
+    ratio: Mapped[float | None]  # (last 4 weeks + 1) / (4 before + 1); None when all zero
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class EvalItem(Base):
     """An Item in the test set, with its answer-key labels."""
 

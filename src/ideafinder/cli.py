@@ -714,6 +714,25 @@ def schedule_uninstall() -> None:
     typer.echo("\n".join(f"Removed {p.name}" for p in removed) or "Nothing was installed.")
 
 
+@app.command()
+def trends(
+    idea: Annotated[list[int] | None, typer.Option(help="Only these Idea ids.")] = None,
+    max_ideas: Annotated[int, typer.Option(help="At most this many lookups.")] = 30,
+) -> None:
+    """Look up Google search interest for Inbox and Working List Ideas (the daily run does this)."""
+    from ideafinder.pipeline.trends import refresh_trends
+
+    _configure_logging()
+    _require_ready()
+    r = _ideas_session(lambda s: refresh_trends(s, max_ideas=max_ideas, idea_ids=idea))
+    typer.echo(
+        f"Refreshed {len(r.refreshed)} Ideas; {r.no_terms} have no search terms yet "
+        "(they come with the Summary)."
+    )
+    if r.stopped:
+        typer.secho(f"! {r.stopped}", fg="yellow")
+
+
 eval_app = typer.Typer(no_args_is_help=True, help="The extraction test set (pick the local model).")
 app.add_typer(eval_app, name="eval")
 

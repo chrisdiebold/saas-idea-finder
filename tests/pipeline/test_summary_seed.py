@@ -47,11 +47,13 @@ async def test_summary_quotes_come_only_from_verified_evidence(session, llm, fak
         quotes=[2, 99, 1, 2],  # out of range and repeated numbers are ignored
         payment_note="Some pay $50.",
         verdict="Worth a look.",
+        search_terms=["Crew Scheduling App ", "", "rain delay texts", "x", "y"],
     )
     summary = await summarize(session, llm, idea, evidence_of(signals=3))
     assert [q["author"] for q in summary["quotes"]] == ["a2", "a0"]
     assert "2. [pain]" in fake.prompts["summary"][0] and "a1" not in str(summary)
     assert idea.summary_signal_count == 3
+    assert summary["search_terms"] == ["crew scheduling app", "rain delay texts"]
 
 
 @pytest.mark.db

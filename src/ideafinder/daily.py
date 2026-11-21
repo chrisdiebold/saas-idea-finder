@@ -1,4 +1,5 @@
-"""The daily chain: collect → prefilter → extract → embed and attach → form Ideas (weekly) → rank.
+"""The daily chain: collect → prefilter → extract → embed and attach → form Ideas (weekly) → rank
+→ Google Trends.
 
 Started by launchd every morning (macOS runs a missed schedule when the Mac wakes), and also by
 the worker's own daily job while `ideafinder up` is running. Whichever starts first does the
@@ -56,6 +57,7 @@ async def run_daily(
     now: datetime | None = None,
     collect_transport=None,
     llm_transport=None,
+    trends_fetch=None,
 ) -> DailyReport:
     from ideafinder.collectors.runner import collect
     from ideafinder.llm import LLM, ServerUnreachable
@@ -64,6 +66,9 @@ async def run_daily(
     from ideafinder.pipeline.extract import extract_pending
     from ideafinder.pipeline.prefilter import prefilter_pending
     from ideafinder.pipeline.rank import rank
+    from ideafinder.pipeline.trends import fetch_with_pytrends, refresh_trends
+
+    trends_fetch = trends_fetch or fetch_with_pytrends
 
     now = now or datetime.now(UTC)
     report = DailyReport()
@@ -135,6 +140,16 @@ async def run_daily(
                     except ServerUnreachable as exc:
                         await session.rollback()
                         report.errors.append(f"model steps skipped: {exc}")
+
+                    # 4. Google Trends for Inbox and Working List Ideas (weekly per Idea; no
+                    # model needed). Feeds tomorrow's Momentum.
+                    trends = await refresh_trends(session, fetch=trends_fetch, now=now)
+                    report.steps["trends"] = {
+                        "refreshed": len(trends.refreshed),
+                        "without_terms": trends.no_terms,
+                    }
+                    if trends.stopped:
+                        report.steps["trends"]["stopped"] = trends.stopped
                 except Exception as exc:
                     await session.rollback()
                     report.status = "failed"

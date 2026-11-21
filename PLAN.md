@@ -56,8 +56,9 @@ Non-tech small businesses stay thin until Phase 2 Sources arrive.
 ### Phase 3
 | Source | Mostly produces | Access |
 |---|---|---|
-| Google Trends | Momentum data for scoring (not Signals) | Trends API / pytrends |
-| BiggerPockets | Pain, Request (real-estate investors) | RSS only, recent posts; check robots.txt first |
+| Google Trends | Momentum data for scoring (not Signals) | pytrends, weekly per published Idea (ADR 0004) |
+
+BiggerPockets was planned here but isn't collected: its terms forbid storing its content (ADR 0004).
 
 ### Reference data (not a Source of Signals)
 | Dataset | Used for | Access |
@@ -199,7 +200,7 @@ sleep delays collection): Postgres, the `collect` queue and the web app move to 
    - **Spread:** distinct Communities (weighted heavily)
    - **Intensity:** Signal intensity plus Votes, normalized per Community. Votes never count as Authors.
    - **Payment:** Payment Signals, B2B Persona, Competitors that charge
-   - **Momentum:** last 4 weeks vs. the 4 before (plus Google Trends in Phase 3)
+   - **Momentum:** last 4 weeks vs. the 4 before, blended half-and-half with Google Trends where available
    - **Competitive gap:** Complaint Signals relative to the number of Competitors
    - **Fit:** from Preferences
    - **Solo-buildable:** the local model's estimate of an MVP in 4–6 weeks for one developer with your skills
@@ -486,7 +487,7 @@ saas-idea-finder/
 | M7 | Validation | Working List with Hypotheses, Kill criteria, Time limits, Experiments, Leads, Validation kits, Active limit, Head-to-heads |
 | M8 | Run it daily | launchd schedules, nightly backups, This Week, Health page |
 | M9 | Phase 2 Sources | GitHub, Shopify App Store, feature-request boards, Zapier, Product Hunt, Mastodon, Bluesky. **Adding Zapier triggers the Pi move.** |
-| M10 | Phase 3 Sources | Google Trends, BiggerPockets RSS |
+| M10 | Phase 3 Sources | Google Trends (BiggerPockets dropped, ADR 0004) |
 | M11 | Tuning | Scoring suggestions from Overrides and Review history; tighten prompts against the eval set |
 | (when triggered) | Move to the Pi | Postgres, `collect` queue and web app on the Pi 4 with a USB 3 SSD; Mac keeps the `model` queue |
 
