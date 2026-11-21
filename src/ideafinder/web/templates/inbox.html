@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Inbox · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% endblock %}
+{% block content %}
+{% set total = confident | length + uncertain | length %}
+<h1>Inbox</h1>
+{% if total %}
+<p class="lede">{{ total }} {{ "Idea is" if total == 1 else "Ideas are" }} waiting for a decision. Each is a problem
+that several people described in their own words. Keys: <kbd>j</kbd><kbd>k</kbd> to move,
+<kbd>o</kbd> to open.</p>
+{% else %}
+<p class="lede">Nothing waiting. Ideas arrive here once enough different people in more than one
+community describe the same problem. The ranking runs daily at 07:00.</p>
+<form method="post" action="/rank-now"><input type="hidden" name="back" value="/inbox">
+  <button>Run ranking now</button></form>
+{% endif %}
+
+{% if confident %}
+<section class="confident" aria-labelledby="confident-h">
+  <h2 id="confident-h">Clear calls</h2>
+  <p class="muted small">The model is at least {{ (confident_at * 100) | int }}% sure about these. Untick any you
+    want to look at yourself; the rest are applied when you confirm.</p>
+  <form method="post" action="/inbox/confirm">
+    <ul class="ticklist">
+      {% for idea, p in confident %}
+      <li>
+        <input type="checkbox" name="ids" value="{{ idea.id }}" id="c{{ idea.id }}" checked>
+        <label for="c{{ idea.id }}" class="tick-title">{{ idea.title }}</label>
+        <span class="tick-call">{{ m.outcome(p) }}</span>
+        <span class="tick-why muted small">{{ p.rationale }} <a href="/ideas/{{ idea.id }}">Open</a></span>
+      </li>
+      {% endfor %}
+    </ul>
+    <button class="go">Confirm ticked proposals</button>
+  </form>
+</section>
+{% endif %}
+
+{% if uncertain %}
+<section aria-labelledby="judge-h">
+  {% if confident %}<h2 id="judge-h">Needs your judgement</h2>{% endif %}
+  {% for idea, p in uncertain %}
+  <article class="entry" data-idea="{{ idea.id }}" tabindex="-1">
+    <header>
+      <a class="entry-title" href="/ideas/{{ idea.id }}" data-key="o">{{ idea.title }}</a>
+      {% if idea.resurfaced_at %}<span class="tag new">Resurfaced</span>
+      {% elif idea.published_at and idea.published_at >= new_since %}<span class="tag new">New</span>{% endif %}
+      {% if idea.score is not none %}<span class="score" title="Score out of 100">{{ idea.score | round | int }}</span>{% endif %}
+    </header>
+    <p class="persona">For {{ (idea.summary.persona if idea.summary else idea.persona) }}. <span class="muted">{{ m.counts(idea) }}</span></p>
+    <p>{{ idea.summary.problem if idea.summary else idea.problem_statement }}</p>
+    {% if idea.summary and idea.summary.quotes %}
+      {% set q = idea.summary.quotes[0] %}{{ m.quote(q.text, q.author, q.source, q.url) }}
+    {% endif %}
+    {% if idea.summary %}<p class="small"><span class="muted">Paying:</span> {{ idea.summary.payment_note }}</p>{% endif %}
+    {{ m.proposal_line(p) }}
+    {{ m.actions(idea, p, "/inbox", keys=True) }}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{{ m.merge_targets(targets) }}
+{% endblock %}
+{% block scripts %}<script src="/static/keys.js" defer></script>{% endblock %}

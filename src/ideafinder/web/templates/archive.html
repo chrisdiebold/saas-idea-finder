@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Archive · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% endblock %}
+{% block content %}
+<h1>Archive</h1>
+<p class="lede">Ideas set aside. They keep collecting evidence; those archived as too competitive,
+low willingness to pay or too big to build come back to the Inbox if the evidence changes a lot.</p>
+
+<div class="filters" role="navigation" aria-label="Filter by reason">
+  <a href="/archive?period={{ period }}" {% if not reason %}aria-current="true"{% endif %}>All reasons</a>
+  {% for key, label in REASON_LABELS.items() %}{% if counts.get(key) %}
+  <a href="/archive?reason={{ key }}&period={{ period }}" {% if reason == key %}aria-current="true"{% endif %}>{{ label }} {{ counts[key] }}</a>
+  {% endif %}{% endfor %}
+</div>
+<form method="get" action="/archive" class="filters">
+  <input type="hidden" name="reason" value="{{ reason }}">
+  <label for="period">Archived in</label>
+  <select name="period" id="period" onchange="this.form.submit()">
+    {% for value, label in [("30", "the last 30 days"), ("90", "the last 90 days"), ("365", "the last year"), ("all", "any time")] %}
+    <option value="{{ value }}" {% if period == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <noscript><button>Show</button></noscript>
+</form>
+
+{% if ideas %}
+<ul class="rows">
+  {% for idea in ideas %}
+  <li>
+    <a href="/ideas/{{ idea.id }}"><strong>{{ idea.title }}</strong></a>
+    <span class="tag aside">{{ REASON_LABELS.get(idea.archive_reason, idea.archive_reason) }}</span>
+    <form method="post" action="/ideas/{{ idea.id }}/review" style="margin:0">
+      <input type="hidden" name="to" value="restore">
+      <input type="hidden" name="back" value="/archive?reason={{ reason }}&period={{ period }}">
+      <button class="quiet">Restore</button>
+    </form>
+    <span class="sub">For {{ idea.persona }}. {{ m.counts(idea) }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="muted">No archived Ideas match.</p>
+{% endif %}
+{% endblock %}

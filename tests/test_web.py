@@ -6,7 +6,7 @@ from tests.conftest import UNREACHABLE_URL
 
 def test_status_page_explains_unreachable_database(use_settings):
     use_settings(UNREACHABLE_URL)
-    response = TestClient(app).get("/")
+    response = TestClient(app).get("/status")
     assert response.status_code == 200
     assert "not reachable" in response.text
     assert "Open Postgres.app" in response.text

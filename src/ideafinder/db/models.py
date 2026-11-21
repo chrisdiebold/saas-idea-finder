@@ -184,6 +184,13 @@ class Idea(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     archive_reason: Mapped[str | None] = mapped_column(String(32))  # current one, if archived
     resurfaced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Summary (M5): {"problem", "persona", "quotes": [{"text", "author", "source", "url"}],
+    # "payment_note", "verdict"}, rewritten when the evidence changes significantly.
+    summary: Mapped[dict[str, Any] | None]
+    summary_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    summary_signal_count: Mapped[int | None]
+    summary_community_ids: Mapped[list[Any] | None]
+    notes_md: Mapped[str | None] = mapped_column(Text)  # yours
 
 
 class IdeaSignal(Base):

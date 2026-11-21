@@ -18,7 +18,7 @@ from ideafinder.pipeline.cluster import (
     render_for_naming,
     split,
 )
-from tests.pipeline.conftest import direction, near
+from tests.fixtures import direction, near
 
 RULES = ClusteringRules(
     attach_similarity=0.8, related_similarity=0.85, min_cluster_size=3, min_authors=2

@@ -1,4 +1,4 @@
-"""Shared fixtures for pipeline tests that need Postgres and a stand-in for LM Studio."""
+"""Shared fixtures for tests needing Postgres with evidence, and a stand-in for LM Studio."""
 
 import json
 from collections import defaultdict
@@ -53,9 +53,21 @@ async def session(use_settings, test_database_url):
         yield s
 
 
+DEFAULT_ANSWERS = {
+    # Summaries are written for every published Idea; most tests don't care what they say.
+    "summary": {
+        "problem": "A problem.",
+        "persona": "a persona",
+        "quotes": [1],
+        "payment_note": "No sign of paying.",
+        "verdict": "Look closer.",
+    },
+}
+
+
 class FakeModel:
-    """Stands in for LM Studio. JSON answers are queued per task; embeddings of known texts
-    come back as given vectors (anything else gets a fixed random one)."""
+    """Stands in for LM Studio. JSON answers are queued per task (a few tasks have a default);
+    embeddings of known texts come back as given vectors (anything else a fixed random one)."""
 
     def __init__(self):
         self.answers: dict[str, list[dict]] = defaultdict(list)
@@ -72,9 +84,12 @@ class FakeModel:
             return httpx2.Response(200, json={"data": data})
         task = body["response_format"]["json_schema"]["name"]
         self.prompts[task].append(body["messages"][1]["content"])
-        if not self.answers[task]:
+        if self.answers[task]:
+            answer = json.dumps(self.answers[task].pop(0))
+        elif task in DEFAULT_ANSWERS:
+            answer = json.dumps(DEFAULT_ANSWERS[task])
+        else:
             raise AssertionError(f"unexpected {task} call")
-        answer = json.dumps(self.answers[task].pop(0))
         return httpx2.Response(
             200, json={"choices": [{"message": {"content": answer}, "finish_reason": "stop"}]}
         )

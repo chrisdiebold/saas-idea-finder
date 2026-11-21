@@ -58,5 +58,5 @@ async def test_worker_runs_jobs_on_both_queues_and_records_heartbeats(migrated):
 
 def test_status_page_all_clear_when_running(migrated):
     # Heartbeats were recorded by the previous test within the last few seconds.
-    response = TestClient(web_app).get("/")
+    response = TestClient(web_app).get("/status")
     assert "up to date" in response.text

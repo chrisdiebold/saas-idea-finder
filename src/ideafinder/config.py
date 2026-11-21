@@ -112,6 +112,10 @@ class ClusteringRules(_Strict):
     min_authors: int = Field(ge=1)
 
 
+class InboxRules(_Strict):
+    confident_at: float = Field(gt=0, le=1, description="Proposals this sure go under Confirm all")
+
+
 class ScoringConfig(_Strict):
     weights: ScoringWeights
     thread_cap: int = Field(gt=0, description="Max Signals one Thread contributes to an Idea")
@@ -120,6 +124,7 @@ class ScoringConfig(_Strict):
     stale: StaleRule
     validation: ValidationRules
     clustering: ClusteringRules
+    inbox: InboxRules
 
 
 # --- models.yaml ----------------------------------------------------------------------------

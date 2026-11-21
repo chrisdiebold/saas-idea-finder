@@ -9,6 +9,8 @@ from psycopg import sql
 from ideafinder.db.engine import get_engine
 from ideafinder.settings import PROJECT_ROOT, Settings, get_settings
 
+pytest_plugins = ["tests.fixtures"]  # database + fake-model fixtures shared across test folders
+
 TEST_DB = "ideafinder_test"
 SERVER_URL = os.environ.get("IDEAFINDER_TEST_SERVER_URL", "postgresql://localhost:5432")
 UNREACHABLE_URL = "postgresql://localhost:1/ideafinder"  # nothing listens on port 1

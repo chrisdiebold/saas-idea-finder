@@ -1,4 +1,5 @@
-"""The daily ranking run: score → re-check fit → publish → resurface → propose → snapshot."""
+"""The daily ranking run: score → re-check fit → publish → resurface → summarise → propose →
+snapshot."""
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from ideafinder.pipeline.propose import ProposeReport, propose_missing
 from ideafinder.pipeline.publish import PublishReport, publish_ready
 from ideafinder.pipeline.resurface import RefitReport, refit, resurface_on_evidence
 from ideafinder.pipeline.score import score_ideas, snapshot_week
+from ideafinder.pipeline.summary import SummaryReport, summarize_pending
 
 
 @dataclass
@@ -21,6 +23,7 @@ class RankReport:
     refit: RefitReport
     publish: PublishReport
     resurfaced: list[int]
+    summaries: SummaryReport
     propose: ProposeReport
     snapshots: int
 
@@ -35,7 +38,8 @@ async def rank(
     published = await publish_ready(session, llm, config.publish, evidence, profile)
     resurfaced = await resurface_on_evidence(session, config.resurface, evidence)
     if refitted.checked or published.published:
-        await score_ideas(session, config, now=now)  # fit checks changed some scores
+        evidence = await score_ideas(session, config, now=now)  # fit checks changed some scores
+    summaries = await summarize_pending(session, llm, config.stale, evidence)
     proposed = await propose_missing(session, llm, profile)
     snapshots = await snapshot_week(session, now)
     return RankReport(
@@ -44,6 +48,7 @@ async def rank(
         refit=refitted,
         publish=published,
         resurfaced=resurfaced,
+        summaries=summaries,
         propose=proposed,
         snapshots=snapshots,
     )

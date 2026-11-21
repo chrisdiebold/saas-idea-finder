@@ -1,0 +1,71 @@
+{# A quote in the author's own words, marked like evidence. #}
+{% macro quote(text, author, source, url, date=None) -%}
+<blockquote class="voice"><mark>{{ text }}</mark>
+  <cite>{{ author or "Someone" }}, <a href="{{ url }}" target="_blank" rel="noopener">{{ source }}</a>{% if date %}, {{ date.strftime("%-d %b %Y") }}{% endif %}</cite>
+</blockquote>
+{%- endmacro %}
+
+{% macro outcome(p) -%}
+{% if p.proposal == "working" %}<strong class="ok">Move to the Working List</strong>{% else %}<strong style="color: var(--aside)">Archive as {{ REASON_LABELS[p.archive_reason] | lower }}</strong>{% endif %}
+{%- endmacro %}
+
+{# The proposal, in one readable sentence. #}
+{% macro proposal_line(p) -%}
+{% if p %}<p class="proposal">Proposed: {{ outcome(p) }}, {{ (p.confidence * 100) | round | int }}% sure. <span class="muted">{{ p.rationale }}</span></p>{% endif %}
+{%- endmacro %}
+
+{# Review actions for an Idea. `keys` shows the keyboard shortcuts (Inbox only). #}
+{% macro actions(idea, p, back, keys=False) -%}
+<div class="actions">
+  {% if idea.state == "inbox" %}
+    {% if p %}
+    <form method="post" action="/ideas/{{ idea.id }}/confirm" data-key="y">
+      <input type="hidden" name="back" value="{{ back }}">
+      <button class="go">Confirm proposal{% if keys %}<kbd>y</kbd>{% endif %}</button>
+    </form>
+    {% endif %}
+    {% if not p or p.proposal != "working" %}
+    <form method="post" action="/ideas/{{ idea.id }}/review" data-key="w">
+      <input type="hidden" name="to" value="working"><input type="hidden" name="back" value="{{ back }}">
+      <button>Move to Working List{% if keys %}<kbd>w</kbd>{% endif %}</button>
+    </form>
+    {% endif %}
+  {% endif %}
+  {% if idea.state in ("inbox", "working") %}
+    <form method="post" action="/ideas/{{ idea.id }}/review" class="archive-form">
+      <input type="hidden" name="to" value="archive"><input type="hidden" name="back" value="{{ back }}">
+      <label class="visually-hidden" for="reason-{{ idea.id }}">Archive reason</label>
+      <select name="reason" id="reason-{{ idea.id }}" data-key="a" required>
+        <option value="">Archive because…</option>
+        {% for r in (INBOX_REASONS if idea.state == "inbox" else INBOX_REASONS + ("dropped_after_research",)) %}
+        <option value="{{ r }}" {% if p and p.archive_reason == r %}selected{% endif %}>{{ REASON_LABELS[r] }}</option>
+        {% endfor %}
+      </select>
+      <button class="aside">Archive{% if keys %}<kbd>a</kbd>{% endif %}</button>
+    </form>
+  {% endif %}
+  {% if idea.state == "archived" %}
+    <form method="post" action="/ideas/{{ idea.id }}/review">
+      <input type="hidden" name="to" value="restore"><input type="hidden" name="back" value="{{ back }}">
+      <button>Restore to Inbox</button>
+    </form>
+  {% endif %}
+  <form method="post" action="/ideas/{{ idea.id }}/merge" class="merge-form">
+    <input type="hidden" name="back" value="{{ back }}">
+    <label class="visually-hidden" for="merge-{{ idea.id }}">Merge into</label>
+    <input id="merge-{{ idea.id }}" name="into" list="merge-targets" placeholder="Merge into… (Idea number or title)" data-key="m" size="30">
+    <button class="quiet">Merge{% if keys %}<kbd>m</kbd>{% endif %}</button>
+  </form>
+</div>
+{%- endmacro %}
+
+{% macro merge_targets(targets) -%}
+<datalist id="merge-targets">
+  {% for t in targets %}<option value="{{ t.id }} {{ t.title }}">{% endfor %}
+</datalist>
+{%- endmacro %}
+
+{% macro counts(idea) -%}
+{% set e = (idea.score_breakdown or {}).get("evidence", {}) %}
+{% if e %}{{ e.authors }} {{ "person" if e.authors == 1 else "people" }} in {{ e.communities }} {{ "community" if e.communities == 1 else "communities" }}{% endif %}
+{%- endmacro %}

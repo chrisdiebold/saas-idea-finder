@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Settings · Idea Finder{% endblock %}
+{% block head %}
+<style>
+  .fit { max-width: 680px; }
+  .fit fieldset { border: 0; border-top: 1px solid var(--rule); padding: 18px 0 6px; margin: 0; }
+  .fit legend { font-weight: 600; font-size: 17px; padding: 0 0 4px; }
+  .fit .hint { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  .fit .row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+  .fit .row label { display: grid; gap: 4px; font-size: 14px; }
+  .fit textarea { min-height: 84px; }
+</style>
+{% endblock %}
+{% block content %}
+<h1>Fit profile</h1>
+<p class="lede">What makes an Idea worth building for you. Every Idea about to reach the Inbox is
+checked against it.
+{% if profile %}Version {{ profile.version }}, saved {{ profile.updated_at.strftime("%-d %b %Y") }}.
+{% else %}You haven't set one yet, so fit counts as neutral and nothing is ruled out.{% endif %}</p>
+
+<form method="post" action="/settings" class="fit">
+  <fieldset>
+    <legend>Deal-breakers</legend>
+    <p class="hint">One per line. An Idea that would break any of these is archived as outside fit,
+      without asking. Keep them to things you would never do.</p>
+    <textarea name="deal_breakers" aria-label="Deal-breakers" placeholder="needs custom hardware
+handles regulated health data (HIPAA)">{{ form.deal_breakers }}</textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>What you can build</legend>
+    <p class="hint">Skills and tools, one per line. Used to judge whether you could build a first
+      version alone in 4–6 weeks.</p>
+    <textarea name="skills" aria-label="Skills" placeholder="Python backends
+web apps">{{ form.skills }}</textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>Money</legend>
+    <div class="row">
+      <label>Lowest price per customer per month (USD)
+        <input name="price_min_usd" inputmode="numeric" value="{{ form.price_min_usd }}" size="8"></label>
+      <label>Highest price
+        <input name="price_max_usd" inputmode="numeric" value="{{ form.price_max_usd }}" size="8"></label>
+      <label>Monthly revenue goal
+        <input name="revenue_goal_usd" inputmode="numeric" value="{{ form.revenue_goal_usd }}" size="10"></label>
+      <label>How you'd sell
+        <select name="sales_model">
+          {% for value, label in [("", "Not set"), ("self_serve", "Self-serve sign-up"), ("sales_led", "Talking to customers"), ("either", "Either")] %}
+          <option value="{{ value }}" {% if form.sales_model == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Industries</legend>
+    <div class="row" style="display: grid; grid-template-columns: 1fr 1fr;">
+      <label>Preferred, one per line
+        <textarea name="preferred_industries">{{ form.preferred_industries }}</textarea></label>
+      <label>Avoided, one per line
+        <textarea name="avoided_industries">{{ form.avoided_industries }}</textarea></label>
+    </div>
+  </fieldset>
+
+  <p style="margin-top: 18px"><button class="go">Save Fit profile</button></p>
+</form>
+
+{% if profile %}
+<form method="post" action="/rank-now" style="margin-top: 8px">
+  <input type="hidden" name="back" value="/settings">
+  <button>Re-check Ideas now</button>
+  <span class="small muted">Otherwise it happens in the daily ranking at 07:00.</span>
+</form>
+{% endif %}
+{% endblock %}

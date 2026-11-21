@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% block title %}Status · Idea Finder{% endblock %}
 {% block content %}
-<h1>SaaS Idea Finder</h1>
-<p class="sub">System status. The Inbox, Working List and Archive arrive in milestone M5.
-· <a href="/eval">Test set review</a></p>
+<h1>Status</h1>
+<p class="lede">Whether the database and workers are running, and what's collected.
+The extraction test set has its own <a href="/eval">review page</a>.</p>
 
 {% if status.problems %}
 <div class="problems">
@@ -14,7 +15,7 @@
 {% endif %}
 
 <h2>Database</h2>
-<table>
+<table class="facts">
   {% set db = status.database %}
   <tr><td>Postgres</td><td>{% if db.reachable %}<span class="ok">reachable</span>, version {{ db.server_version }}{% else %}<span class="bad">not reachable</span>{% endif %}</td></tr>
   <tr><td>pgvector</td><td>{{ db.pgvector_version or "not installed" }}</td></tr>
@@ -22,7 +23,7 @@
 </table>
 
 <h2>Workers</h2>
-<table>
+<table class="facts">
   {% for q in status.queues %}
   <tr><td><code>{{ q.queue }}</code> queue</td>
       <td>{% if q.alive %}<span class="ok">running</span>{% elif q.last_seen %}<span class="bad">last seen {{ q.last_seen.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="bad">never seen</span>{% endif %}</td></tr>
@@ -30,7 +31,7 @@
 </table>
 
 <h2>Sources</h2>
-<table>
+<table class="facts">
   {% if status.config %}
     {% for s in status.config.sources.sources %}
     {% set run = status.source_runs.get(s.key) %}

@@ -15,6 +15,7 @@ import asyncio
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import numpy as np
 from sqlalchemy import Text, cast, delete, func, or_, select, text, update
@@ -60,7 +61,7 @@ class AttachReport:
     ideas_touched: set[int] = field(default_factory=set)
 
 
-def _unassigned():
+def unassigned():
     """Signals that could belong to an Idea but don't yet: the holding pool and new arrivals."""
     return (
         select(Signal)
@@ -82,10 +83,10 @@ async def attach_pending(session: AsyncSession, rules: ClusteringRules) -> Attac
     report = AttachReport()
     if not await session.scalar(select(func.count()).select_from(_live_ideas().subquery())):
         report.pooled = await session.scalar(
-            select(func.count()).select_from(_unassigned().subquery())
+            select(func.count()).select_from(unassigned().subquery())
         )
         return report
-    signals = (await session.scalars(_unassigned().order_by(Signal.id))).all()
+    signals = (await session.scalars(unassigned().order_by(Signal.id))).all()
     for signal in signals:
         distance = Idea.centroid.cosine_distance(signal.embedding)
         nearest = (
@@ -198,7 +199,7 @@ def find_groups(pool: Sequence[PoolSignal], rules: ClusteringRules) -> list[Grou
 async def load_pool(session: AsyncSession) -> list[PoolSignal]:
     rows = (
         await session.execute(
-            _unassigned()
+            unassigned()
             .join(Item, Item.id == Signal.item_id)
             .with_only_columns(Signal, Item.author)
             .order_by(Signal.id.desc())
@@ -496,7 +497,9 @@ class SignalRow:
     signal: Signal
     similarity: float | None
     author: str | None
-    source: str
+    source: str  # Source name, e.g. "Hacker News"
+    url: str
+    created_at: datetime
 
 
 @dataclass(frozen=True)
@@ -524,7 +527,9 @@ async def idea_detail(session: AsyncSession, idea_id: int) -> IdeaDetail | None:
     ).all()
     signals = (
         await session.execute(
-            select(Signal, IdeaSignal.similarity, Item.author, Source.key)
+            select(
+                Signal, IdeaSignal.similarity, Item.author, Source.name, Item.url, Item.created_at
+            )
             .join(IdeaSignal, IdeaSignal.signal_id == Signal.id)
             .join(Item, Item.id == Signal.item_id)
             .join(Source, Source.id == Item.source_id)

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Add idea · Idea Finder{% endblock %}
+{% block content %}
+<h1>Add an idea of your own</h1>
+<p class="lede">Describe a problem you already know about. It goes straight to your Working List,
+picks up any matching evidence already collected, and keeps collecting from now on.</p>
+<form method="post" action="/ideas/new" style="max-width: 640px">
+  <p><label for="title"><strong>Short name</strong></label><br>
+    <input id="title" name="title" value="{{ form.title or '' }}" required style="width: 100%"
+           placeholder="Landscapers re-texting crews after weather delays"></p>
+  <p><label for="problem"><strong>The problem</strong></label><br>
+    <span class="small muted">What goes wrong for people, not the product you'd build.</span><br>
+    <textarea id="problem" name="problem_statement" rows="3" required>{{ form.problem_statement or '' }}</textarea></p>
+  <p><label for="persona"><strong>Who has it</strong></label><br>
+    <span class="small muted">An industry or role, e.g. "owner of a small landscaping company".</span><br>
+    <input id="persona" name="persona" value="{{ form.persona or '' }}" required style="width: 100%"></p>
+  <button class="go">Add to Working List</button>
+</form>
+{% endblock %}

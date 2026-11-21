@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ idea.title }} · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% endblock %}
+{% block content %}
+{% set list_paths = {"inbox": "/inbox", "working": "/working", "archived": "/archive"} %}
+{% set here_path = "/ideas/" ~ idea.id %}
+<p class="small muted">
+  {% if idea.merged_into_id %}Merged into <a href="/ideas/{{ idea.merged_into_id }}">#{{ idea.merged_into_id }}</a>
+  {% elif idea.state in list_paths %}<a href="{{ list_paths[idea.state] }}">{{ STATE_LABELS[idea.state] }}</a>
+  {% else %}Incubating: not enough evidence for the Inbox yet{% endif %}
+</p>
+<h1>{{ idea.title }}</h1>
+<p class="persona">For {{ idea.summary.persona if idea.summary else idea.persona }}.
+  {% if idea.seeded %}<span class="tag">Added by you</span>{% endif %}
+  {% if idea.state == "archived" %}<span class="tag aside">Archived: {{ REASON_LABELS.get(idea.archive_reason, idea.archive_reason) }}</span>{% endif %}
+  {% if idea.resurfaced_at and idea.state == "inbox" %}<span class="tag new">Resurfaced</span>{% endif %}
+</p>
+
+<div class="detail">
+<div>
+  {% if idea.summary %}
+    <p class="verdict">{{ idea.summary.verdict }}</p>
+    <p style="max-width: 68ch">{{ idea.summary.problem }}</p>
+    {% for q in idea.summary.quotes %}{{ m.quote(q.text, q.author, q.source, q.url) }}{% endfor %}
+    <p><span class="muted">Paying:</span> {{ idea.summary.payment_note }}</p>
+    <p class="small muted">{% if idea.summary_updated_at %}Summary written {{ idea.summary_updated_at.strftime("%-d %b %Y") }}; it{% else %}It{% endif %}'s rewritten when the evidence grows by half or reaches a new community.</p>
+  {% else %}
+    <p style="max-width: 68ch">{{ idea.problem_statement }}</p>
+    <p class="small muted">No Summary yet. One is written when the Idea reaches the Inbox{% if idea.seeded %}, or shortly after you add it if matching Signals exist{% endif %}.</p>
+  {% endif %}
+
+  {% if not idea.merged_into_id %}
+  <h2>Decide</h2>
+  {{ m.proposal_line(d.proposal) }}
+  {{ m.actions(idea, d.proposal, here_path) }}
+  {% endif %}
+
+  <h2>Evidence <span class="muted" style="font-weight: 400">{{ d.signals | length }} Signals</span></h2>
+  {% if d.signals %}
+  <form method="post" action="/ideas/{{ idea.id }}/split">
+    {% for s in d.signals %}
+    <div class="signal">
+      <input type="checkbox" name="signal_ids" value="{{ s.signal.id }}" id="s{{ s.signal.id }}" aria-label="Select for splitting">
+      <div>
+        <label for="s{{ s.signal.id }}" class="about"><span class="tag">{{ s.signal.kind | capitalize }}</span> {{ s.signal.problem_statement }}</label>
+        {{ m.quote(s.signal.quote, s.author, s.source, s.url, s.created_at) }}
+        {% if s.signal.workaround %}<p class="about">Workaround today: {{ s.signal.workaround }}</p>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if not idea.merged_into_id %}
+    <div class="split-bar">
+      <button>Split ticked Signals into a new Idea</button>
+      <span class="small muted">This Idea keeps its place; the ticked Signals start over as a new Idea.</span>
+    </div>
+    {% endif %}
+  </form>
+  {% else %}
+  <p class="muted">No Signals yet. New ones attach as they're collected.</p>
+  {% endif %}
+</div>
+
+<aside class="rail" aria-label="Numbers and history">
+  {% if idea.score is not none %}
+  <h3>Score {{ idea.score | round | int }} of 100</h3>
+  <ul class="bars">
+    {% for key, value in (idea.score_breakdown or {}).get("components", {}).items() %}
+    <li><span>{{ COMPONENT_LABELS.get(key, key) }}</span>
+        <span class="bar"><span style="width: {{ (value * 100) | round | int }}%"></span></span>
+        <span class="num">{{ (value * 100) | round | int }}</span></li>
+    {% endfor %}
+  </ul>
+  <p class="small muted" style="margin-top: 6px">{{ m.counts(idea) }}.</p>
+  {% endif %}
+
+  <h3>Trend</h3>
+  {% if trend %}
+  <svg class="trend" viewBox="0 0 240 48" preserveAspectRatio="none" role="img" aria-label="Weekly score">
+    <polyline points="{{ trend }}"/></svg>
+  <p class="small muted">Score each week since {{ snapshots[0].week.strftime("%-d %b") }}.</p>
+  {% else %}
+  <p class="small muted">Appears after two weekly snapshots.</p>
+  {% endif %}
+
+  {% if idea.fit %}
+  <h3>Fit</h3>
+  <p>{{ idea.fit.notes }}</p>
+  <p class="small muted">Fit {{ (idea.fit.fit * 100) | int }}, buildable alone {{ (idea.fit.solo_buildable * 100) | int }},
+    {{ "businesses pay" if idea.fit.b2b else "consumers pay" }}.</p>
+  {% if idea.fit.deal_breakers %}<p class="bad">Breaks: {{ idea.fit.deal_breakers | join("; ") }}</p>{% endif %}
+  {% endif %}
+
+  {% if d.related %}
+  <h3>Related</h3>
+  <ul class="plain">{% for other, sim in d.related %}
+    <li><a href="/ideas/{{ other.id }}">{{ other.title }}</a><br><span class="small muted">for {{ other.persona }}</span></li>
+  {% endfor %}</ul>
+  {% endif %}
+
+  {% if competitors %}
+  <h3>Products mentioned</h3>
+  <ul class="plain">{% for c, n in competitors %}
+    <li>{{ c.name }} <span class="muted small">{{ n }}×</span></li>
+  {% endfor %}</ul>
+  {% endif %}
+
+  <h3>Notes</h3>
+  <form method="post" action="/ideas/{{ idea.id }}/notes">
+    <textarea name="notes" rows="4" aria-label="Your notes">{{ idea.notes_md or "" }}</textarea>
+    <button style="margin-top: 6px">Save notes</button>
+  </form>
+
+  {% if d.reviews %}
+  <h3>History</h3>
+  <ul class="plain">{% for r in d.reviews | reverse %}
+    <li>{{ ACTION_LABELS.get(r.action, r.action) }}{% if r.archive_reason and r.action == "to_archive" %}: {{ REASON_LABELS[r.archive_reason] | lower }}{% endif %}
+      <br><span class="small muted">{{ r.created_at.strftime("%-d %b %Y") }}{% if r.note %}, {{ r.note }}{% endif %}{% if r.overrode_proposal %}, against the proposal{% endif %}</span></li>
+  {% endfor %}</ul>
+  {% endif %}
+</aside>
+</div>
+{{ m.merge_targets(targets) }}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Communities · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% endblock %}
+{% block content %}
+<h1>Communities</h1>
+<p class="lede">The places evidence is collected from. The Watch list is set in
+<code>config/sources.yaml</code>; edit it there and the next collection picks it up.</p>
+
+<h2>Watch list</h2>
+<table class="facts">
+  <tr><td></td><td class="num">Collected</td><td class="num">Worth reading</td><td class="num">Signals</td><td class="num">Ideas</td></tr>
+  {% for c in watched %}
+  <tr><td>{{ c.name }}<br><span class="small muted">{{ c.source }}</span></td>
+      <td>{{ "{:,}".format(c["items"]) }}</td><td>{{ "{:,}".format(c.kept) }}</td>
+      <td>{{ "{:,}".format(c.signals) }}</td><td>{{ "{:,}".format(c.ideas) }}</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Suggested</h2>
+{% if suggested %}
+<table class="facts">
+  {% for c in suggested %}
+  <tr><td>{{ c.name }}<br><span class="small muted">{{ c.source }}</span></td><td>{{ c.signals }} Signals</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="muted">None yet. Suggestions come from Sources that span many communities (forums,
+app stores), which arrive in phase 2; the current Sources only collect from the Watch list.</p>
+{% endif %}
+{% endblock %}

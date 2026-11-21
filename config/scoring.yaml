@@ -34,3 +34,6 @@ clustering:     # how Signals become Ideas (PLAN.md §3 step 5); similarities ar
   related_similarity: 0.85  # Ideas whose problems (without Persona) are this close are Related
   min_cluster_size: 3       # smallest group of pooled Signals that can form a new Idea
   min_authors: 2            # ...and it needs this many distinct Authors (one person isn't a pattern)
+
+inbox:
+  confident_at: 0.8   # Proposed decisions at least this confident are grouped under "Confirm all"

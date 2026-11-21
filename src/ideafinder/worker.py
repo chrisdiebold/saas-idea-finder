@@ -144,6 +144,39 @@ async def rank_ideas(timestamp: int) -> dict:
     }
 
 
+@app.task(queue=MODEL_QUEUE, name="summarize_idea", queueing_lock="summarize_idea")
+async def summarize_idea(idea_id: int) -> dict:
+    """Write one Idea's Summary now (e.g. right after you add a Seeded Idea)."""
+    from ideafinder.config import load_config
+    from ideafinder.db.models import Idea
+    from ideafinder.llm import LLM, ServerUnreachable
+    from ideafinder.pipeline.score import gather_evidence
+    from ideafinder.pipeline.summary import summarize
+
+    settings = get_settings()
+    config = load_config(settings.config_dir)
+    try:
+        async with LLM(config.models) as llm:
+            async with get_sessionmaker()() as session:
+                idea = await session.get(Idea, idea_id)
+                if idea is None:
+                    return {"skipped": "no such Idea"}
+                e = (await gather_evidence(session, config.scoring, [idea_id])).get(idea_id)
+                written = await summarize(session, llm, idea, e)
+                await session.commit()
+    except ServerUnreachable as exc:
+        return {"skipped": str(exc)}
+    return {"written": written is not None}
+
+
+async def defer(task_name: str, **kwargs) -> None:
+    """Queue a job from outside a worker (the web app). Uses its own connection, since the web
+    app may share a process with a running worker (`ideafinder up`)."""
+    deferrer = app.with_connector(PsycopgConnector(conninfo=get_settings().database_url))
+    async with deferrer.open_async():
+        await deferrer.configure_task(task_name).defer_async(**kwargs)
+
+
 @app.periodic(cron="0 6 * * *", periodic_id="daily-collect")
 @app.task(queue=COLLECT_QUEUE, name="daily_collect", queueing_lock="collect_sources")
 async def daily_collect(timestamp: int) -> dict:

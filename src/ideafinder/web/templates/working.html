@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Working List · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% endblock %}
+{% block content %}
+<h1>Working List</h1>
+{% if ideas %}
+<p class="lede">Ideas you've chosen to pursue. Stages, time limits and experiments arrive with the
+validation tools.</p>
+<ul class="rows">
+  {% for idea in ideas %}
+  <li>
+    <a href="/ideas/{{ idea.id }}"><strong>{{ idea.title }}</strong></a>
+    {% if idea.seeded %}<span class="tag">Added by you</span>{% else %}<span></span>{% endif %}
+    <span class="num">{{ idea.score | round | int if idea.score is not none else "" }}</span>
+    <span class="sub">For {{ idea.persona }}. {{ m.counts(idea) }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="lede">Nothing here yet. Move an Idea here from the <a href="/inbox">Inbox</a>, or
+<a href="/ideas/new">add one of your own</a>.</p>
+{% endif %}
+{% endblock %}

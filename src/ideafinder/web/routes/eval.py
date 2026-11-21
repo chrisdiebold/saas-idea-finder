@@ -1,20 +1,18 @@
 """The test-set review page: confirm or correct the draft labels, one Item at a time."""
 
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 
 from ideafinder.db.engine import get_sessionmaker
 from ideafinder.db.models import EvalItem, Item, Source
 from ideafinder.pipeline.extract import SIGNAL_KINDS, thread_title
+from ideafinder.web.templating import templates
 
 router = APIRouter(prefix="/eval")
-templates = Jinja2Templates(directory=Path(__file__).parents[1] / "templates")
 
 
 @router.get("", response_class=HTMLResponse)
