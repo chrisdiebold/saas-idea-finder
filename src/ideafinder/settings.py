@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # Collection
     user_agent: str = "ideafinder/0.1 (personal research tool)"
     stackexchange_key: SecretStr | None = None  # raises the daily quota from 300 to 10,000
+    github_token: SecretStr | None = None  # raises GitHub's limit from 60 to 5,000 requests/hour
+    producthunt_token: SecretStr | None = None  # free developer token; needed for Product Hunt
+    bluesky_handle: str | None = None  # with an app password, search can page past 100 posts
+    bluesky_app_password: SecretStr | None = None
 
     # Running it daily (M8)
     backup_dir: Path = (

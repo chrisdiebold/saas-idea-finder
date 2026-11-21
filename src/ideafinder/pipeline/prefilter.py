@@ -55,6 +55,8 @@ def decide(item: Item) -> Decision:
     """The outcome for one Item, ignoring per-Thread limits (applied by `prefilter_pending`)."""
     if item.extra.get("show_hn"):
         return Decision("market", "show_hn")
+    if item.extra.get("launch"):  # Product Hunt
+        return Decision("market", "launch")
     if (
         item.kind == "post"
         and item.title

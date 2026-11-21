@@ -39,7 +39,9 @@ def config(repo_config_dir):
         }
     )
     sources = [
-        s.model_copy(update={"communities": s.communities[:1]}) for s in full.sources.sources
+        s.model_copy(update={"communities": s.communities[:1]})
+        for s in full.sources.sources
+        if s.phase == 1  # the fakes cover Phase 1 Sites; Phase 2 has its own tests
     ]
     return full.model_copy(
         update={"sources": full.sources.model_copy(update={"queries": queries, "sources": sources})}

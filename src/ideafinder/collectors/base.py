@@ -78,11 +78,28 @@ class HttpSource:
         self.max_attempts = max_attempts
         self.base_delay = base_delay
 
-    async def get(self, url: str, params: dict[str, Any] | None = None) -> httpx2.Response:
+    async def get(
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> httpx2.Response:
+        return await self.request("GET", url, params=params, headers=headers)
+
+    async def request(
+        self,
+        method: str,
+        url: str,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        json: Any = None,
+    ) -> httpx2.Response:
         for attempt in range(1, self.max_attempts + 1):
             async with self.limiter:
                 try:
-                    response = await self.client.get(url, params=params)
+                    response = await self.client.request(
+                        method, url, params=params, headers=headers, json=json
+                    )
                 except httpx2.TransportError as exc:
                     if attempt == self.max_attempts:
                         raise
@@ -99,8 +116,16 @@ class HttpSource:
             return response
         raise AssertionError("unreachable")
 
-    async def get_json(self, url: str, params: dict[str, Any] | None = None) -> Any:
-        return (await self.get(url, params)).json()
+    async def get_json(
+        self,
+        url: str,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        return (await self.get(url, params, headers)).json()
+
+    async def post_json(self, url: str, body: Any, headers: dict[str, str] | None = None) -> Any:
+        return (await self.request("POST", url, headers=headers, json=body)).json()
 
     def _backoff(self, attempt: int) -> float:
         return self.base_delay * 2 ** (attempt - 1) * (1 + random.random() / 4)

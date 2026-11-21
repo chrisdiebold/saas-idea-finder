@@ -32,6 +32,11 @@ uv run ideafinder collect # collect new Items now (the first run backfills 12 mo
 real backfill still happens later. `--source/-s KEY` limits collection to one Source. While the workers run,
 collection also happens daily at 06:00 (see below).
 
+Phase 2 Sources (GitHub, Shopify App Store reviews, public feature-request boards, Zapier
+Community, Mastodon hashtags, Bluesky search) work without accounts; their Watch lists are in
+`config/sources.yaml`. Product Hunt needs a free developer token and is off until you add one;
+GitHub and Bluesky accept optional credentials for more history (see `.env.example`).
+
 Stack Exchange works without a key (300 requests/day) but a free key from stackapps.com raises that to 10,000:
 put `IDEAFINDER_STACKEXCHANGE_KEY=...` in `.env`.
 

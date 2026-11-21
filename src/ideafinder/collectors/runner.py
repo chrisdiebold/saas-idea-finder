@@ -136,7 +136,16 @@ async def collect_source(
     async with get_sessionmaker()() as session:
         run_id = await start_run(session, "collect", source_id)
         await session.commit()
-        for stream in collector.streams():
+        try:
+            streams = collector.streams()
+        except (SourceGone, ValueError) as exc:  # e.g. a missing token or a mistyped Community
+            report.status = "failed"
+            report.streams["setup"] = StreamReport(error=str(exc))
+            log.warning("%s: %s", source.key, exc)
+            await finish_run(session, run_id, "failed", stats={}, errors=report.errors)
+            await session.commit()
+            return report
+        for stream in streams:
             stream_report = report.streams.setdefault(stream.key, StreamReport())
             cursor = await get_cursor(session, source_id, stream.key)
             since = _since(cursor, config.sources.backfill_months, since_override)

@@ -81,7 +81,9 @@ def daily_setup(use_settings, test_database_url, tmp_path, repo_config_dir):
     )
     full = load_config(repo_config_dir)
     sources = [
-        s.model_copy(update={"communities": s.communities[:1]}) for s in full.sources.sources
+        s.model_copy(update={"communities": s.communities[:1]})
+        for s in full.sources.sources
+        if s.phase == 1  # the fakes cover Phase 1 Sites; Phase 2 has its own tests
     ]
     queries = full.sources.queries.model_copy(
         update={"request": ["is there a tool"], "payment": [], "workaround": [], "complaint": [],

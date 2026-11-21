@@ -37,6 +37,18 @@ SOURCE_CONTEXT = {
     ),
     "wordpress": "WordPress.org plugin support forums and reviews, written by website owners.",
     "stackexchange": "Stack Exchange, a Q&A network; questions ask for help or recommendations.",
+    "github": (
+        "GitHub issues on an open-source business tool; written by its users and developers. "
+        "A missing feature is a complaint about that tool."
+    ),
+    "shopify_apps": "Low-star reviews of a Shopify app, written by the stores that installed it.",
+    "feature_boards": (
+        "A software company's public feature-request board; each post asks the vendor for a "
+        "feature, which is a complaint about that product."
+    ),
+    "zapier": "Zapier Community, where people ask how to connect apps and automate work.",
+    "mastodon": "Mastodon posts under a hashtag; many are promotional rather than problems.",
+    "bluesky": "Bluesky posts matching phrases like 'is there a tool'; short social posts.",
 }
 
 SYSTEM_PROMPT = """\

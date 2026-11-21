@@ -41,3 +41,59 @@ sources:
     communities: [softwarerecs, webapps, superuser]   # site names
     options:
       collect_all: [softwarerecs]   # every question there is a request; other sites use the queries
+
+  # --- Phase 2 (M9). Watch lists are starting points; edit freely. ---
+
+  - key: github
+    name: GitHub
+    phase: 2
+    rate_limit_per_minute: 20   # 60/hour without a token; set IDEAFINDER_GITHUB_TOKEN for 5,000
+    communities:                # "owner/repo": open-source tools used by small businesses
+      - invoiceninja/invoiceninja
+      - calcom/cal.com
+      - twentyhq/twenty
+      - nocodb/nocodb
+
+  - key: shopify_apps
+    name: Shopify App Store
+    phase: 2
+    rate_limit_per_minute: 20   # plain HTML; no documented limit
+    communities: [judgeme, omnisend, klaviyo-email-marketing, subscription-payments, quickbooks-online, shipstation]   # app handles
+    options:
+      max_review_rating: 3
+
+  - key: feature_boards
+    name: Feature-request boards
+    phase: 2
+    rate_limit_per_minute: 20
+    communities:                # "platform:address"; platforms: uservoice, canny, featurebase
+      - uservoice:productideas.xero.com/forums/967115-invoices-quotes
+      - canny:feedback.canny.io/feature-requests
+      - featurebase:feedback.featurebase.app
+
+  - key: zapier
+    name: Zapier Community
+    phase: 2
+    rate_limit_per_minute: 10
+    communities: [zapier]       # one RSS feed, latest 100 topics only (see ADR 0003: the Pi move)
+
+  - key: producthunt
+    name: Product Hunt
+    phase: 2
+    enabled: false              # needs IDEAFINDER_PRODUCTHUNT_TOKEN; then set to true
+    rate_limit_per_minute: 20   # API: 6,250 complexity points per 15 minutes
+    communities: [producthunt]
+
+  - key: mastodon
+    name: Mastodon
+    phase: 2
+    rate_limit_per_minute: 30   # instance limit: 300 requests per 5 minutes
+    communities: [smallbusiness, freelance, bookkeeping, ecommerce, realestate]   # hashtags
+    options:
+      instance: mastodon.social
+
+  - key: bluesky
+    name: Bluesky
+    phase: 2
+    rate_limit_per_minute: 20   # robots.txt: "a handful of concurrent requests should be ok"
+    communities: [bluesky]      # searches the pain-phrase queries; newest 100 per phrase without an account
