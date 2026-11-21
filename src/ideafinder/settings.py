@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     user_agent: str = "ideafinder/0.1 (personal research tool)"
     stackexchange_key: SecretStr | None = None  # raises the daily quota from 300 to 10,000
 
+    # Running it daily (M8)
+    backup_dir: Path = (
+        PROJECT_ROOT / "backups"
+    )  # inside your home folder, so Time Machine covers it
+    backup_keep_days: int = 14
+    pg_bin_dir: Path = Path("/Applications/Postgres.app/Contents/Versions/latest/bin")
+    log_dir: Path = PROJECT_ROOT / "logs"
+    daily_extract_minutes: int = 90  # model time per daily run; the backlog continues next day
+
     @property
     def sqlalchemy_url(self) -> str:
         """The same database, addressed through SQLAlchemy's psycopg 3 dialect."""

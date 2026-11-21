@@ -30,7 +30,7 @@ uv run ideafinder collect # collect new Items now (the first run backfills 12 mo
 
 `ideafinder collect --since-days 3` is a trial run over a short window; it doesn't move the cursors, so the
 real backfill still happens later. `--source/-s KEY` limits collection to one Source. While the workers run,
-collection also happens daily at 06:00.
+collection also happens daily at 06:00 (see below).
 
 Stack Exchange works without a key (300 requests/day) but a free key from stackapps.com raises that to 10,000:
 put `IDEAFINDER_STACKEXCHANGE_KEY=...` in `.env`.
@@ -63,6 +63,27 @@ Other commands: `ideafinder web` (web app only), `ideafinder worker [--queue col
 `ideafinder db status`, `ideafinder db revision -m "..."`.
 
 Settings can be overridden in `.env` (see `.env.example`).
+
+## Running it every day
+
+```sh
+uv run ideafinder schedule show       # see the two launchd jobs first
+uv run ideafinder schedule install    # daily chain at 06:00, backup at 02:30
+```
+
+The daily chain (`ideafinder daily`) collects, prefilters, extracts for up to 90 minutes, attaches
+new Signals to Ideas, forms new Ideas once a week, and ranks. It runs without the web app open;
+if the Mac is asleep at 06:00, it runs when it wakes. Steps that need LM Studio are skipped when
+it isn't running and catch up next time. If `ideafinder up` is also running, whichever starts
+first does the day's work. The **Health** page shows the last run, backups and anything to fix;
+**This Week** shows what changed.
+
+Backups (`ideafinder backup`) are compressed `pg_dump` files in `backups/`, kept 14 days; set
+`IDEAFINDER_BACKUP_DIR` to put them in iCloud Drive instead. To restore one:
+
+```sh
+pg_restore --clean --if-exists --dbname ideafinder backups/ideafinder-YYYYMMDD-HHMMSS.dump
+```
 
 ## Development
 

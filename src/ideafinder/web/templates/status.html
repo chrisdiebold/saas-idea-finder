@@ -1,17 +1,48 @@
 {% extends "base.html" %}
-{% block title %}Status · Idea Finder{% endblock %}
+{% block title %}Health · Idea Finder{% endblock %}
 {% block content %}
-<h1>Status</h1>
-<p class="lede">Whether the database and workers are running, and what's collected.
-The extraction test set has its own <a href="/eval">review page</a>.</p>
+<h1>Health</h1>
+<p class="lede">Whether the daily routine is happening: collection, the model work, backups and the
+schedule that runs them. The extraction test set has its own <a href="/eval">review page</a>.</p>
 
-{% if status.problems %}
+{% set warnings = (health.warnings if health else []) %}
+{% if status.problems or warnings %}
 <div class="problems">
   <strong class="bad">Needs attention</strong>
-  <ul>{% for p in status.problems %}<li>{{ p }}</li>{% endfor %}</ul>
+  <ul>{% for p in status.problems + warnings %}<li>{{ p }}</li>{% endfor %}</ul>
 </div>
 {% else %}
 <p class="ok">Everything is running.</p>
+{% endif %}
+
+{% if health %}
+<h2>Daily routine</h2>
+<table class="facts">
+  <tr><td>Last daily run</td><td>
+    {% if health.daily %}<span class="{{ 'ok' if health.daily.status == 'succeeded' else 'bad' }}">{{ health.daily.status }}</span>
+      {% if health.daily.finished_at %}{{ health.daily.finished_at.strftime("%-d %b %H:%M") }}{% else %}(still running){% endif %}
+      {% set st = health.daily.stats %}
+      {% if st.get("extract") %}<br><small>{{ st.extract.signals }} new Signals, {{ st.get("attached", 0) }} attached to Ideas{% if st.get("formed") is not none %}, {{ st.formed }} new Ideas{% endif %}{% if st.get("rank") %}, {{ st.rank.published }} to the Inbox{% endif %}</small>{% endif %}
+      {% for e in health.daily.errors[:3] %}<br><small class="bad">{{ e }}</small>{% endfor %}
+    {% else %}never{% endif %}</td></tr>
+  <tr><td>Schedule</td><td>
+    {% for job, on in health.schedule.items() %}<code>{{ job }}</code> {% if on %}<span class="ok">installed</span>{% else %}<span class="bad">not installed</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+    <br><small>Daily at 06:00, backup at 02:30. A run missed while the Mac sleeps happens when it wakes.</small></td></tr>
+  <tr><td>Backups</td><td>
+    {% if health.latest_backup %}{% set b = health.latest_backup %}
+      newest {{ b.taken_at.strftime("%-d %b %H:%M") }}, {{ "%.1f" | format(b.size / 1048576) }} MB; {{ health.backup_count }} kept
+      <br><small>in <code>{{ settings.backup_dir }}</code>, {{ settings.backup_keep_days }} days</small>
+    {% else %}<span class="bad">none yet</span>{% endif %}</td></tr>
+</table>
+
+<h2>Model work</h2>
+<table class="facts">
+  <tr><td>LM Studio</td><td>{% if health.lm_studio %}<span class="ok">reachable</span><br><small>{{ health.lm_models | join(", ") }}</small>{% else %}<span class="bad">not reachable</span>{% endif %}</td></tr>
+  <tr><td>Waiting for extraction</td><td>{{ "{:,}".format(health.unextracted_items) }} Items</td></tr>
+  <tr><td>Signals not yet in an Idea</td><td>{{ "{:,}".format(health.pooled_signals) }}{% if health.unembedded_signals %}, plus {{ "{:,}".format(health.unembedded_signals) }} not embedded yet{% endif %}</td></tr>
+  <tr><td>Queued jobs</td><td>{% if health.queue_backlog %}{% for q, n in health.queue_backlog.items() %}<code>{{ q }}</code> {{ n }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}none{% endif %}</td></tr>
+  {% if health.failed_jobs %}<tr><td>Failed jobs</td><td class="bad">{% for name, n in health.failed_jobs %}{{ name }} ({{ n }}){% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endif %}
+</table>
 {% endif %}
 
 <h2>Database</h2>
@@ -26,7 +57,8 @@ The extraction test set has its own <a href="/eval">review page</a>.</p>
 <table class="facts">
   {% for q in status.queues %}
   <tr><td><code>{{ q.queue }}</code> queue</td>
-      <td>{% if q.alive %}<span class="ok">running</span>{% elif q.last_seen %}<span class="bad">last seen {{ q.last_seen.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="bad">never seen</span>{% endif %}</td></tr>
+      <td>{% if q.alive %}<span class="ok">running</span>{% elif q.last_seen %}<span class="bad">last seen {{ q.last_seen.strftime("%Y-%m-%d %H:%M") }}</span>{% else %}<span class="bad">never seen</span>{% endif %}
+      <br><small>Only while <code>ideafinder up</code> runs; the schedule doesn't need them.</small></td></tr>
   {% endfor %}
 </table>
 
@@ -35,11 +67,11 @@ The extraction test set has its own <a href="/eval">review page</a>.</p>
   {% if status.config %}
     {% for s in status.config.sources.sources %}
     {% set run = status.source_runs.get(s.key) %}
-    <tr><td>{{ s.name }}<br><small>Phase {{ s.phase }}{{ "" if s.enabled else ", disabled" }} · {{ s.communities | length }} Watch-listed</small></td>
+    <tr><td>{{ s.name }}<br><small>Phase {{ s.phase }}{{ "" if s.enabled else ", disabled" }}, {{ s.communities | length }} on the Watch list</small></td>
       <td>{% if not run %}never collected
           {% elif run.status == "running" %}collecting now…
           {% else %}<span class="{{ 'ok' if run.status == 'succeeded' else 'bad' }}">{{ run.status }}</span>
-            {{ run.finished_at.strftime("%Y-%m-%d %H:%M") if run.finished_at else "" }} · {{ run.new }} new · {{ "{:,}".format(run.items_total) }} Items total
+            {{ run.finished_at.strftime("%Y-%m-%d %H:%M") if run.finished_at else "" }}, {{ run.new }} new, {{ "{:,}".format(run.items_total) }} Items in total
             {% for e in run.errors[:3] %}<br><small class="bad">{{ e }}</small>{% endfor %}
           {% endif %}</td></tr>
     {% endfor %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}This Week · Idea Finder{% endblock %}
+{% block head %}{% include "_ideas_css.html" %}{% include "_validation_css.html" %}
+<style>
+  .week { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 48px; max-width: 980px; }
+  .week section { min-width: 0; }
+  .week h2 { margin-top: 28px; }
+  .week ul { list-style: none; padding: 0; margin: 0; }
+  .week li { padding: 7px 0; border-bottom: 1px solid var(--rule); }
+  .delta { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .delta.up { color: var(--go); } .delta.down { color: var(--aside); }
+  @media (max-width: 760px) { .week { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<h1>This Week</h1>
+<p class="lede">What changed since {{ since.strftime("%A %-d %B") }}, and what needs you.
+{% if inbox_waiting %}{{ inbox_waiting }} {{ "Idea is" if inbox_waiting == 1 else "Ideas are" }} waiting in the <a href="/inbox">Inbox</a>.{% endif %}</p>
+
+{% set needs_you = expiring or kills or awaiting_replies %}
+{% if needs_you %}
+<section class="decide-now" aria-labelledby="you-h">
+  <h2 id="you-h">Needs you</h2>
+  <ul class="pinned">
+    {% for idea, w, ends in expiring %}
+    <li><a href="/ideas/{{ idea.id }}/validation">{{ idea.title }}</a>:
+      {{ stage_labels[w.stage] | lower }}
+      {% if ends <= now %}<strong class="bad">time limit reached {{ ends.strftime("%-d %b") }}</strong>{% else %}time limit ends {{ ends.strftime("%A %-d %b") }}{% endif %}.</li>
+    {% endfor %}
+    {% for d, idea in kills %}
+    <li><a href="/working">{{ idea.title }}</a> met its Kill criteria. Confirm archiving on the Working List.</li>
+    {% endfor %}
+    {% if awaiting_replies %}
+    <li>{{ awaiting_replies | length }} Lead{{ "s" if awaiting_replies | length != 1 }} contacted and waiting: log any replies.
+      {% for lead, title in awaiting_replies[:6] %}<br><small>{{ lead.author }} for <a href="/ideas/{{ lead.idea_id }}/validation#leads">{{ title }}</a></small>{% endfor %}</li>
+    {% endif %}
+  </ul>
+</section>
+{% endif %}
+
+<div class="week">
+  <section>
+    <h2>New in the Inbox</h2>
+    {% if new_inbox or resurfaced %}
+    <ul>
+      {% for idea in resurfaced %}<li><span class="tag new">Resurfaced</span> <a href="/ideas/{{ idea.id }}">{{ idea.title }}</a></li>{% endfor %}
+      {% for idea in new_inbox %}<li><a href="/ideas/{{ idea.id }}">{{ idea.title }}</a> <span class="small muted">{{ m.counts(idea) }}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="muted">Nothing new reached the Inbox.</p>{% endif %}
+
+    <h2>Archived automatically: outside fit</h2>
+    {% if outside_fit %}
+    <p class="small muted">{{ outside_fit | length }} broke a Deal-breaker in your <a href="/settings">Fit profile</a>.</p>
+    <ul>{% for idea, note in outside_fit %}<li><a href="/ideas/{{ idea.id }}">{{ idea.title }}</a><br><small class="muted">{{ note }}</small></li>{% endfor %}</ul>
+    {% else %}<p class="muted">None.</p>{% endif %}
+  </section>
+
+  <section>
+    <h2>Biggest movers</h2>
+    {% if movers %}
+    <ul>{% for r in movers %}{% set d = r.score - r.before %}
+      <li><span class="delta {{ 'up' if d > 0 else 'down' }}">{{ "%+d" | format(d | round | int) }}</span>
+        <a href="/ideas/{{ r.id }}">{{ r.title }}</a> <span class="small muted">now {{ r.score | round | int }}</span></li>
+    {% endfor %}</ul>
+    {% else %}<p class="muted">Score changes show once there are weekly snapshots to compare with.</p>{% endif %}
+
+    <h2>Briefings gone Stale</h2>
+    {% if stale %}
+    <ul>{% for b, idea in stale %}<li><a href="/ideas/{{ idea.id }}/briefing">{{ idea.title }}</a> <span class="small muted">gained a lot of evidence since version {{ b.version }}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">None.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

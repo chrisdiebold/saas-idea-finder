@@ -98,6 +98,7 @@
   <header class="top">
     <a class="brand" href="/inbox">Idea Finder</a>
     <nav aria-label="Main">
+      <a href="/week" {% if here.startswith("/week") %}aria-current="page"{% endif %}>This Week</a>
       <a href="/inbox" {% if here.startswith("/inbox") %}aria-current="page"{% endif %}>Inbox<span class="count">{{ nav.get("inbox", "") }}</span></a>
       <a href="/working" {% if here.startswith("/working") %}aria-current="page"{% endif %}>Working List<span class="count">{{ nav.get("working", "") }}</span></a>
       <a href="/archive" {% if here.startswith("/archive") %}aria-current="page"{% endif %}>Archive</a>
@@ -106,7 +107,7 @@
     <nav class="end" aria-label="Setup">
       <a href="/communities" {% if here.startswith("/communities") %}aria-current="page"{% endif %}>Communities</a>
       <a href="/settings" {% if here.startswith("/settings") %}aria-current="page"{% endif %}>Settings</a>
-      <a href="/status" {% if here.startswith("/status") %}aria-current="page"{% endif %}>Status</a>
+      <a href="/health" {% if here.startswith("/health") or here.startswith("/status") %}aria-current="page"{% endif %}>Health</a>
     </nav>
   </header>
   {% if msg %}<p class="flash" role="status">{{ msg }}</p>{% endif %}

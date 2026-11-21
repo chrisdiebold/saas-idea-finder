@@ -97,10 +97,10 @@ async def extract_signals(timestamp: int) -> dict:
     }
 
 
-@app.periodic(cron="0 5 * * 1", periodic_id="form-ideas")
 @app.task(queue=MODEL_QUEUE, name="form_ideas", queueing_lock="form_ideas")
 async def form_ideas(timestamp: int) -> dict:
-    """Weekly: cluster the holding pool into new Incubating Ideas and name them."""
+    """Cluster the holding pool into new Incubating Ideas and name them (the daily chain does
+    this weekly; this task is for running it on request)."""
     from ideafinder.config import load_config
     from ideafinder.llm import LLM, ServerUnreachable
     from ideafinder.pipeline.cluster import form_ideas as form
@@ -116,10 +116,10 @@ async def form_ideas(timestamp: int) -> dict:
     return {"pool": report.pool, "created": len(report.created), "failed": report.failed}
 
 
-@app.periodic(cron="0 7 * * *", periodic_id="daily-rank")
 @app.task(queue=MODEL_QUEUE, name="rank_ideas", queueing_lock="rank_ideas")
 async def rank_ideas(timestamp: int) -> dict:
-    """Daily, after collection: score, check fit, publish, resurface, propose, snapshot.
+    """Score, check fit, publish, resurface, propose, snapshot (the daily chain does this; this
+    task is for "Run ranking now").
 
     Runs on `model` because the Fit check and Proposed decisions need the local model.
     """
@@ -208,10 +208,17 @@ async def defer(task_name: str, **kwargs) -> None:
         await deferrer.configure_task(task_name).defer_async(**kwargs)
 
 
-@app.periodic(cron="0 6 * * *", periodic_id="daily-collect")
-@app.task(queue=COLLECT_QUEUE, name="daily_collect", queueing_lock="collect_sources")
-async def daily_collect(timestamp: int) -> dict:
-    return await collect_sources()
+@app.periodic(cron="0 6 * * *", periodic_id="daily")
+@app.task(queue=MODEL_QUEUE, name="daily", queueing_lock="daily")
+async def daily(timestamp: int) -> dict:
+    """The daily chain, while `ideafinder up` is running. If launchd already ran it today, this
+    finds the work done and skips (ideafinder.daily)."""
+    from ideafinder.config import load_config
+    from ideafinder.daily import run_daily
+
+    settings = get_settings()
+    report = await run_daily(settings, load_config(settings.config_dir))
+    return {"skipped": report.skipped} if report.skipped else {"status": report.status}
 
 
 WORKER_OPTIONS = {

@@ -409,7 +409,9 @@ async def merge(
     await _carry_working_place(session, source_id, target_id, target.state)
     record(session, target, "merged", None, note=f"#{source_id} {source.title} merged in")
     await session.execute(  # its evidence just changed, so its Briefing is out of date
-        update(Briefing).where(Briefing.idea_id == target_id).values(stale=True)
+        update(Briefing)
+        .where(Briefing.idea_id == target_id, Briefing.stale.is_(False))
+        .values(stale=True, stale_at=func.now())
     )
     await session.flush()
     await refresh_ideas(session, [target_id])

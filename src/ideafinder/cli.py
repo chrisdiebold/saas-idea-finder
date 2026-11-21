@@ -628,6 +628,92 @@ def brief_import(
     )
 
 
+@app.command()
+def daily(
+    force: Annotated[bool, typer.Option(help="Run even if today's run already happened.")] = False,
+) -> None:
+    """The daily chain: collect, prefilter, extract, cluster, rank. launchd runs this at 06:00."""
+    from ideafinder.config import load_config
+    from ideafinder.daily import run_daily
+
+    _configure_logging()
+    _require_ready()
+    settings = get_settings()
+    report = asyncio.run(run_daily(settings, load_config(settings.config_dir), force=force))
+    if report.skipped:
+        typer.echo(f"Skipped: {report.skipped}.")
+        return
+    for step, result in report.steps.items():
+        typer.echo(f"{step:<10} {result}")
+    for e in report.errors:
+        typer.secho(f"! {e}", fg="yellow")
+    typer.echo(f"Daily run {report.status}.")
+    if report.status == "failed":
+        raise typer.Exit(1)
+
+
+@app.command()
+def backup(
+    list_: Annotated[bool, typer.Option("--list", help="Show existing backups instead.")] = False,
+) -> None:
+    """Back up the database (pg_dump), keeping 14 days. launchd runs this at 02:30."""
+    from ideafinder.backup import BackupError, list_backups
+    from ideafinder.backup import backup as make_backup
+
+    settings = get_settings()
+    if list_:
+        for b in list_backups(settings.backup_dir):
+            typer.echo(f"{b.taken_at:%Y-%m-%d %H:%M}  {b.size / 1048576:7.1f} MB  {b.path}")
+        return
+    try:
+        made, removed = make_backup(settings)
+    except BackupError as exc:
+        typer.secho(f"✗ {exc}", fg="red", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"Backed up to {made.path} ({made.size / 1048576:.1f} MB).")
+    if removed:
+        typer.echo(f"Removed {len(removed)} backup(s) older than {settings.backup_keep_days} days.")
+
+
+schedule_app = typer.Typer(
+    no_args_is_help=True, help="The launchd schedule: daily run at 06:00, backup at 02:30."
+)
+app.add_typer(schedule_app, name="schedule")
+
+
+@schedule_app.command("show")
+def schedule_show() -> None:
+    """Print the launchd jobs that `install` would set up, without installing anything."""
+    import plistlib
+
+    from ideafinder.schedule import JOBS, is_loaded, plist_for, plist_path
+
+    settings = get_settings()
+    for job in JOBS:
+        state = "installed" if plist_path(job).exists() and is_loaded(job) else "not installed"
+        typer.secho(f"# {plist_path(job)} ({state}): {job.what}", bold=True)
+        typer.echo(plistlib.dumps(plist_for(job, settings)).decode())
+
+
+@schedule_app.command("install")
+def schedule_install() -> None:
+    """Install (or update) the launchd jobs in ~/Library/LaunchAgents."""
+    from ideafinder.schedule import JOBS, install
+
+    for path, job in zip(install(get_settings()), JOBS, strict=True):
+        typer.echo(f"Installed {path.name}: {job.what} at {job.hour:02d}:{job.minute:02d}")
+    typer.echo(f"Logs go to {get_settings().log_dir}.")
+
+
+@schedule_app.command("uninstall")
+def schedule_uninstall() -> None:
+    """Remove the launchd jobs."""
+    from ideafinder.schedule import uninstall
+
+    removed = uninstall()
+    typer.echo("\n".join(f"Removed {p.name}" for p in removed) or "Nothing was installed.")
+
+
 eval_app = typer.Typer(no_args_is_help=True, help="The extraction test set (pick the local model).")
 app.add_typer(eval_app, name="eval")
 

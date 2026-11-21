@@ -15,6 +15,7 @@ build/
 
 # Local data
 backups/
+logs/
 *.dump
 *.log
 

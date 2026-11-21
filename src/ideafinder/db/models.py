@@ -320,6 +320,7 @@ class Briefing(Base):
     version: Mapped[int]
     status: Mapped[str] = mapped_column(String(24))  # awaiting_response / complete
     stale: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    stale_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     provider: Mapped[str] = mapped_column(String(16))  # manual / anthropic
     format_version: Mapped[int]
     prompt_text: Mapped[str] = mapped_column(Text)

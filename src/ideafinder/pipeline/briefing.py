@@ -519,7 +519,7 @@ async def mark_stale(
     for b in briefings:
         e = evidence.get(b.idea_id)
         if e and is_stale(b, e, rule):
-            b.stale = True
+            b.stale, b.stale_at = True, datetime.now(UTC)
             marked.append(b.idea_id)
     await session.commit()
     return marked
