@@ -222,14 +222,37 @@ async def extract_chunk(
     return parse_output(chunk, result.data), result
 
 
-async def pending_chunks(session: AsyncSession, max_threads: int) -> list[Chunk]:
-    """Chunks for the oldest Threads that still have kept, unextracted Items."""
+async def pending_chunks(
+    session: AsyncSession, max_threads: int, sources: list[str] | None = None
+) -> list[Chunk]:
+    """Chunks for Threads that still have kept, unextracted Items.
+
+    Sources take turns (the oldest Thread of each Source, then the next of each, ...), so one
+    Source with a huge backlog can't hold up the rest: Ideas need evidence from more than one
+    Community to reach the Inbox. `sources` limits it to some Source keys.
+    """
+    pending = (
+        select(
+            Item.source_id,
+            Item.thread_external_id,
+            func.min(Item.id).label("first"),
+        )
+        .where(Item.prefilter == "keep", Item.extracted_at.is_(None))
+        .group_by(Item.source_id, Item.thread_external_id)
+    )
+    if sources:
+        pending = pending.join(Source, Source.id == Item.source_id).where(Source.key.in_(sources))
+    pending = pending.subquery()
+    turn = (
+        func.row_number()
+        .over(partition_by=pending.c.source_id, order_by=pending.c.first)
+        .label("turn")
+    )
+    ranked = select(pending, turn).subquery()
     threads = (
         await session.execute(
-            select(Item.source_id, Item.thread_external_id, func.min(Item.id).label("first"))
-            .where(Item.prefilter == "keep", Item.extracted_at.is_(None))
-            .group_by(Item.source_id, Item.thread_external_id)
-            .order_by("first")
+            select(ranked.c.source_id, ranked.c.thread_external_id, ranked.c.first)
+            .order_by(ranked.c.turn, ranked.c.first)
             .limit(max_threads)
         )
     ).all()
@@ -278,6 +301,20 @@ async def thread_title(
 async def store_signals(
     session: AsyncSession, chunk: Chunk, signals: list[ParsedSignal], model: str
 ) -> int:
+    """Store a chunk's Signals and mark its Items extracted.
+
+    Two extractions can run at once (the worker and a manual `ideafinder extract`) and pick the
+    same Thread. Locking the Items first means the second one to finish sees they're already
+    done and stores nothing for them, instead of a second copy of every Signal.
+    """
+    ids = [i.id for i in chunk.items]
+    # FOR UPDATE waits for a concurrent extraction of the same Items to commit, then sees its
+    # extracted_at (Postgres re-reads locked rows under READ COMMITTED).
+    rows = await session.execute(
+        select(Item.id, Item.extracted_at).where(Item.id.in_(ids)).with_for_update()
+    )
+    already = {item_id for item_id, done in rows.all() if done is not None}
+    signals = [s for s in signals if s.item.id not in already]
     for s in signals:
         signal = Signal(
             item_id=s.item.id,
@@ -296,7 +333,7 @@ async def store_signals(
         await link_products(session, signal.id, s.products)
     await session.execute(
         update(Item)
-        .where(Item.id.in_([i.id for i in chunk.items]))
+        .where(Item.id.in_([i for i in ids if i not in already]))
         .values(extracted_at=datetime.now(UTC))
     )
     return len(signals)
@@ -314,10 +351,14 @@ class ExtractReport:
 
 
 async def extract_pending(
-    session: AsyncSession, llm: LLM, max_threads: int, model: str | None = None
+    session: AsyncSession,
+    llm: LLM,
+    max_threads: int,
+    model: str | None = None,
+    sources: list[str] | None = None,
 ) -> ExtractReport:
     report = ExtractReport(by_kind=defaultdict(int))
-    for chunk in await pending_chunks(session, max_threads):
+    for chunk in await pending_chunks(session, max_threads, sources):
         try:
             signals, result = await extract_chunk(llm, chunk, model)
         except ServerUnreachable:

@@ -206,6 +206,14 @@ def prefilter(
 def extract(
     threads: Annotated[int, typer.Option(help="How many Threads to process.")] = 20,
     model: Annotated[str | None, typer.Option(help="Override the configured model.")] = None,
+    source: Annotated[
+        list[str] | None,
+        typer.Option("--source", "-s", help="Only these Source keys (repeatable)."),
+    ] = None,
+    skip_source: Annotated[
+        list[str] | None,
+        typer.Option("--skip-source", help="Every Source except these (repeatable)."),
+    ] = None,
 ) -> None:
     """Extract Signals from kept Items with the local model (LM Studio must be running)."""
     from ideafinder.config import load_config
@@ -217,10 +225,15 @@ def extract(
     _require_ready()
     settings = get_settings()
 
+    config = load_config(settings.config_dir)
+    chosen = list(source or [s.key for s in config.sources.sources])
+    chosen = [k for k in chosen if k not in (skip_source or [])]
+    wanted = chosen if (source or skip_source) else None
+
     async def run():
-        async with LLM(load_config(settings.config_dir).models) as llm:
+        async with LLM(config.models) as llm:
             async with get_sessionmaker()() as session:
-                return await extract_pending(session, llm, threads, model)
+                return await extract_pending(session, llm, threads, model, wanted)
 
     try:
         r = asyncio.run(run())

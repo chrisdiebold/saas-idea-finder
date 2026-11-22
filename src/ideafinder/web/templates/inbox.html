@@ -10,8 +10,11 @@
 that several people described in their own words. Keys: <kbd>j</kbd><kbd>k</kbd> to move,
 <kbd>o</kbd> to open.</p>
 {% else %}
-<p class="lede">Nothing waiting. Ideas arrive here once enough different people in more than one
-community describe the same problem. The ranking runs daily at 07:00.</p>
+<p class="lede">Nothing waiting. An Idea arrives here once at least {{ publish.min_authors }} different
+people in at least {{ publish.min_communities }} communities describe the same problem.
+{% if incubating %}{{ incubating }} {{ "Idea is" if incubating == 1 else "Ideas are" }} still gathering evidence{% if closest %};
+the closest has {{ closest.people }} {{ "person" if closest.people == 1 else "people" }} in {{ closest.communities }} {{ "community" if closest.communities == 1 else "communities" }}{% endif %}.{% endif %}
+Ranking is part of the daily run; the button below queues one now (it waits if the worker is busy).</p>
 <form method="post" action="/rank-now"><input type="hidden" name="back" value="/inbox">
   <button>Run ranking now</button></form>
 {% endif %}

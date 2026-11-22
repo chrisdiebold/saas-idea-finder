@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ideafinder.config import load_config
@@ -95,6 +95,24 @@ async def inbox(request: Request) -> HTMLResponse:
                 .order_by(Idea.score.desc().nulls_last(), Idea.id)
             )
         ).all()
+        incubating = await session.scalar(
+            select(func.count()).where(Idea.state == "incubating", Idea.merged_into_id.is_(None))
+        )
+        closest = (
+            await session.execute(
+                text(
+                    """SELECT count(DISTINCT coalesce(i.author, i.id::text)) AS people,
+                              count(DISTINCT i.community_id) AS communities
+                       FROM ideas d JOIN idea_signals x ON x.idea_id = d.id
+                       JOIN signals s ON s.id = x.signal_id JOIN items i ON i.id = s.item_id
+                       WHERE d.state = 'incubating' AND d.merged_into_id IS NULL
+                       GROUP BY d.id
+                       ORDER BY least(count(DISTINCT i.community_id), 2) DESC,
+                                count(DISTINCT coalesce(i.author, i.id::text)) DESC
+                       LIMIT 1"""
+                )
+            )
+        ).first()
         confident = [(i, p) for i, p in rows if p and p.confidence >= confident_at]
         uncertain = [(i, p) for i, p in rows if not (p and p.confidence >= confident_at)]
         new_since = datetime.now(UTC) - timedelta(days=NEW_FOR_DAYS)
@@ -107,6 +125,9 @@ async def inbox(request: Request) -> HTMLResponse:
             new_since=new_since,
             confident_at=confident_at,
             targets=await merge_targets(session),
+            incubating=incubating,
+            closest=closest,
+            publish=_config().scoring.publish,
         )
 
 

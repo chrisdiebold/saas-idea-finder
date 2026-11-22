@@ -3,6 +3,7 @@
 A personal tool that collects public evidence of software problems, groups it into Ideas, and helps you decide
 which to pursue and validate. Runs entirely on your Mac.
 
+- **How to use it:** `docs/USER_GUIDE.md` (start here)
 - **What it does and why:** `PLAN.md`
 - **Vocabulary:** `GLOSSARY.md`
 - **Key decisions:** `docs/adr/`
