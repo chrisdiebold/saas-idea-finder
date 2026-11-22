@@ -174,13 +174,26 @@ def find_groups(pool: Sequence[PoolSignal], rules: ClusteringRules) -> list[Grou
     HDBSCAN won't return a single cluster covering the whole pool (allow_single_cluster=False):
     on a large, mixed pool that "cluster" is meaningless. The cost is that a tiny pool holding
     just one group forms nothing until other evidence arrives.
+
+    Clusters are the leaves of HDBSCAN's tree, not its default "excess of mass" pick. On a pool
+    of thousands of software complaints (all fairly similar to each other) the default chose
+    one cluster holding 6,328 of 6,369 Signals, which the attach threshold then emptied: no new
+    Ideas. Leaves are the small, dense groups we want (2026-11-22: 294 groups, 98% of members
+    above the attach threshold).
     """
     if len(pool) < rules.min_cluster_size:
         return []
     from sklearn.cluster import HDBSCAN
 
     vectors = np.stack([p.vector for p in pool])
-    labels = HDBSCAN(min_cluster_size=rules.min_cluster_size, copy=True).fit_predict(vectors)
+    labels = HDBSCAN(
+        min_cluster_size=rules.min_cluster_size, cluster_selection_method="leaf", copy=True
+    ).fit_predict(vectors)
+    biggest = int(np.bincount(labels[labels >= 0]).max()) if (labels >= 0).any() else 0
+    if biggest > len(pool) / 2:
+        log.warning(
+            "one cluster holds %d of %d pooled Signals; groups may be missed", biggest, len(pool)
+        )
     groups = []
     for label in sorted(set(labels) - {-1}):
         idx = np.flatnonzero(labels == label)
