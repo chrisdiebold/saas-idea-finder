@@ -22,10 +22,9 @@ QueueOption = Annotated[
 
 
 def _configure_logging() -> None:
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
-    logging.getLogger("alembic").setLevel(logging.WARNING)  # its plugin setup is noisy at INFO
+    from ideafinder.logs import configure
+
+    configure()
 
 
 def _require_ready() -> None:
@@ -52,7 +51,12 @@ def _resolve_queues(queues: list[str] | None) -> list[str]:
 def _web_server() -> uvicorn.Server:
     settings = get_settings()
     return uvicorn.Server(
-        uvicorn.Config("ideafinder.web.app:app", host=settings.web_host, port=settings.web_port)
+        uvicorn.Config(
+            "ideafinder.web.app:app",
+            host=settings.web_host,
+            port=settings.web_port,
+            log_config=None,  # use ours (ideafinder.logs): no line per page load
+        )
     )
 
 
@@ -61,6 +65,10 @@ async def _run_worker(queues: list[str]) -> None:
     from ideafinder.worker import app as worker_app
 
     async with worker_app.open_async():
+        logging.getLogger("ideafinder.worker").info(
+            "Worker ready (%s). Extraction runs every 10 minutes, the daily run at 06:00.",
+            " and ".join(queues),
+        )
         await worker_app.run_worker_async(
             queues=queues, install_signal_handlers=False, **WORKER_OPTIONS
         )

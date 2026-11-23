@@ -48,7 +48,7 @@ async def session(use_settings, test_database_url):
         conn.execute(
             text(
                 "TRUNCATE fit_profile, ideas, signals, items, communities, sources, competitors,"
-                " market_stats CASCADE"
+                " market_stats, events CASCADE"
             )
         )
     engine.dispose()

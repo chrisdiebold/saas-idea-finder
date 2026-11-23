@@ -512,6 +512,22 @@ class CollectorCursor(Base):
     )
 
 
+class Event(Base):
+    """Something worth knowing happened: a job finished, a step failed, Ideas reached the Inbox.
+    Shown on the Activity page and printed in the terminal (ideafinder.events)."""
+
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32))  # collect, extract, rank, daily, ...
+    level: Mapped[str] = mapped_column(String(8))  # info / warning / error
+    message: Mapped[str] = mapped_column(Text)
+    details: Mapped[dict[str, Any]] = mapped_column(server_default="{}")
+
+
 class Run(Base):
     """One run of one pipeline stage for one Source, with counts and errors."""
 

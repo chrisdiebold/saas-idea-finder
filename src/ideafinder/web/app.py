@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ideafinder.settings import get_settings
 from ideafinder.status import get_status
+from ideafinder.web.routes import activity as activity_routes
 from ideafinder.web.routes import briefings as briefing_routes
 from ideafinder.web.routes import eval as eval_routes
 from ideafinder.web.routes import ideas as idea_routes
@@ -22,6 +23,7 @@ app.include_router(validation_routes.router)
 app.include_router(week_routes.router)
 app.include_router(settings_routes.router)
 app.include_router(eval_routes.router)
+app.include_router(activity_routes.router)
 
 
 # Plain `def` routes: status checks use blocking database calls, so FastAPI runs them in a thread.

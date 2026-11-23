@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Activity · Idea Finder{% endblock %}
+{% block head %}
+<style>
+  .filter { display: flex; gap: 16px; margin: -12px 0 24px; font-size: 14px; }
+  .filter a { color: var(--muted); text-decoration: none; }
+  .filter a[aria-current="true"] { color: var(--ink); border-bottom: 2px solid var(--ink); }
+  .day { font-size: 13px; font-weight: 600; color: var(--muted); margin: 28px 0 6px; }
+  .events { list-style: none; margin: 0; padding: 0; }
+  .events li { display: grid; grid-template-columns: 4.5em 1fr; gap: 12px; padding: 7px 0;
+               border-top: 1px solid var(--rule); }
+  .events time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px;
+                 padding-top: 1px; }
+  .events .warning p { color: var(--aside); }
+  .events .error p { color: var(--bad); font-weight: 550; }
+  .events p { margin: 0; max-width: 80ch; overflow-wrap: anywhere; }
+  .events ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
+</style>
+{% endblock %}
+{% block content %}
+<h1>Activity</h1>
+<p class="lede">What the app did lately: collection, extraction, new Ideas, ranking and the daily
+run, newest first. Problems are in colour; the <a href="/health">Health page</a> shows whether
+everything is running right now.</p>
+
+<nav class="filter" aria-label="Show">
+  <a href="/activity" {% if not problems %}aria-current="true"{% endif %}>Everything</a>
+  <a href="/activity?show=problems" {% if problems %}aria-current="true"{% endif %}>Problems only</a>
+</nav>
+
+{% if not days %}
+<p class="muted">{% if problems %}No problems recorded.{% else %}Nothing yet. Events appear here as
+the worker runs jobs: extraction every 10 minutes while LM Studio is open, the daily run at 06:00.
+Start the worker with <code>uv run ideafinder up</code>.{% endif %}</p>
+{% endif %}
+
+{% for day, items in days %}
+<h2 class="day">{{ day.strftime("%A %-d %B") }}</h2>
+<ol class="events">
+  {% for e in items %}
+  <li class="{{ e.level }}">
+    <time datetime="{{ e.at.isoformat() }}">{{ e.at.astimezone().strftime("%H:%M") }}</time>
+    <div>
+      <p>{% if e.level != "info" %}<span class="visually-hidden">{{ e.level }}: </span>{% endif %}{{ e.message }}</p>
+      {% if e.details.get("ideas") %}
+      <ul>{% for idea_id, title in e.details.ideas %}<li><a href="/ideas/{{ idea_id }}">{{ title }}</a></li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endfor %}
+{% if days and days | map(attribute=1) | map("length") | sum >= shown %}
+<p class="muted small">Showing the latest {{ shown }}. Events are kept for 90 days.</p>
+{% endif %}
+{% endblock %}

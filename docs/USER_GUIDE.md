@@ -111,7 +111,7 @@ write Summaries, Lead openers and Validation kits). Press Ctrl+C to stop. The ap
 reachable from your Mac.
 
 The top bar has: **This Week**, **Inbox** (with a count), **Working List** (with a count),
-**Archive**, **Add idea**, and on the right **Communities**, **Settings** and **Health**.
+**Archive**, **Add idea**, and on the right **Communities**, **Settings**, **Activity** and **Health**.
 
 ## The weekly workflow
 
@@ -226,7 +226,7 @@ Priority on the Working List comes only from these choices.
 has it). It goes straight to the Working List, picks up matching evidence already collected, and
 keeps collecting from then on.
 
-## Settings, Communities and Health
+## Settings, Communities, Activity and Health
 
 - **Settings:** your Fit profile. Saving a change re-checks Ideas on the next daily run (or click
   **Re-check Ideas now**). Ideas archived as *outside fit* come back if they no longer break a
@@ -237,6 +237,14 @@ keeps collecting from then on.
   whether the schedule is installed, the newest backup, whether LM Studio is reachable and has the
   right models, the extraction backlog, and failed jobs. Every warning comes with the command
   that fixes it. Check here first if the Inbox seems quiet.
+- **Activity:** what the app did lately, newest first, one sentence per event: each extraction
+  batch (with how many Items are still waiting), collection, new Ideas, ranking (with links to
+  Ideas that reached the Inbox) and each step of the daily run. Warnings and errors are in
+  colour; **Problems only** filters to them. Events are kept for 90 days.
+
+The terminal running `ideafinder up` shows the same events as they happen, one line each.
+Routine chatter (heartbeats, every request to LM Studio, page loads) is hidden; to see it while
+debugging, start with `IDEAFINDER_VERBOSE=1 uv run ideafinder up`.
 
 ## Behind the scenes: the daily run
 

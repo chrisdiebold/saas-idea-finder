@@ -86,6 +86,8 @@
     table.facts td { padding: 6px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
     table.facts td:first-child { color: var(--muted); width: 40%; }
     .ok { color: var(--go); } .bad { color: var(--bad); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                       clip-path: inset(50%); white-space: nowrap; }
     .problems { border-left: 3px solid var(--bad); padding: 8px 16px; }
 
     @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
@@ -107,6 +109,7 @@
     <nav class="end" aria-label="Setup">
       <a href="/communities" {% if here.startswith("/communities") %}aria-current="page"{% endif %}>Communities</a>
       <a href="/settings" {% if here.startswith("/settings") %}aria-current="page"{% endif %}>Settings</a>
+      <a href="/activity" {% if here.startswith("/activity") %}aria-current="page"{% endif %}>Activity</a>
       <a href="/health" {% if here.startswith("/health") or here.startswith("/status") %}aria-current="page"{% endif %}>Health</a>
     </nav>
   </header>

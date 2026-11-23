@@ -73,7 +73,10 @@ def daily_setup(use_settings, test_database_url, tmp_path, repo_config_dir):
     engine = create_engine(settings.sqlalchemy_url)
     with engine.begin() as conn:
         conn.execute(
-            text("TRUNCATE items, communities, collector_cursors, runs, sources, ideas CASCADE")
+            text(
+                "TRUNCATE items, communities, collector_cursors, runs, sources, ideas, events"
+                " CASCADE"
+            )
         )
     engine.dispose()
     settings = settings.model_copy(
@@ -135,6 +138,17 @@ async def test_daily_collects_and_skips_model_steps_when_lm_studio_is_down(daily
         runs = conn.execute(text("SELECT status FROM runs WHERE stage = 'daily'")).scalars().all()
     engine.dispose()
     assert runs == ["partial", "partial"]
+
+    # Each step said what it did, for the terminal and the Activity page.
+    with engine.connect() as conn:
+        said = conn.execute(text("SELECT level, message FROM events ORDER BY id")).all()
+    engine.dispose()
+    messages = [m for _, m in said]
+    assert messages[0] == "Daily run started"
+    assert any(m.startswith("Collection: ") and "collected" in m for m in messages)
+    assert any(m.startswith("Prefilter: ") and "kept for extraction" in m for m in messages)
+    assert ("warning", next(m for m in messages if m.startswith("Model steps skipped"))) in said
+    assert any(m.startswith("Daily run finished with problems") for m in messages)
 
 
 @pytest.mark.db
