@@ -17,10 +17,10 @@ def test_repo_config_loads(repo_config_dir):
         "shopify_apps",
         "feature_boards",
         "zapier",
+        "producthunt",
         "mastodon",
         "bluesky",
     ]
-    assert not next(s for s in config.sources.sources if s.key == "producthunt").enabled
     assert config.scoring.publish.min_authors == 5
     assert config.models.tasks["briefing"].provider == "manual"
 

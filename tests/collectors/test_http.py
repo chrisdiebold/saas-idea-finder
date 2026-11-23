@@ -33,6 +33,17 @@ async def test_honours_retry_after(no_sleep):
     assert no_sleep == [7.0]
 
 
+async def test_honours_a_rate_limit_reset_header_capped_at_15_minutes(no_sleep):
+    responses = [
+        httpx2.Response(429, headers={"X-Rate-Limit-Reset": "729"}),
+        httpx2.Response(429, headers={"X-Rate-Limit-Reset": "86400"}),
+        httpx2.Response(200, json={}),
+    ]
+    async with _client(responses) as c:
+        await HttpSource(c, 600).get("https://x.test/")
+    assert no_sleep == [729.0, 900.0]
+
+
 async def test_gives_up_after_max_attempts():
     async with _client([httpx2.Response(500)] * 3) as c:
         with pytest.raises(httpx2.HTTPStatusError):

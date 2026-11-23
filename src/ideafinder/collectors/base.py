@@ -61,6 +61,9 @@ class SourceGone(Exception):
     """The Source refused us in a way retrying won't fix (quota exhausted, access revoked)."""
 
 
+MAX_RESET_WAIT = 15 * 60  # Product Hunt's budget resets every 15 minutes
+
+
 class HttpSource:
     """HTTP access to one Source: shared client, per-Source rate limit, retries with backoff."""
 
@@ -132,7 +135,12 @@ class HttpSource:
 
     @staticmethod
     def _retry_after(response: httpx2.Response) -> float | None:
+        """Seconds the server asks us to wait: Retry-After, or the X-Rate-Limit-Reset some APIs
+        (Product Hunt) send instead, capped so one bad header can't stall a run for hours."""
         value = response.headers.get("Retry-After")
+        reset = response.headers.get("X-Rate-Limit-Reset")
+        if not value and reset and reset.isdigit():
+            return float(min(int(reset), MAX_RESET_WAIT))
         if not value:
             return None
         if value.isdigit():

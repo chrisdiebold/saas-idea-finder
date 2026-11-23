@@ -315,6 +315,7 @@ async def test_product_hunt_needs_a_token_and_launches_go_to_market():
         assert request.headers["Authorization"] == "Bearer t"
         body = json.loads(request.content)
         assert body["variables"]["postedAfter"].startswith("2026-11-01")
+        assert "featured: true" in body["query"]  # ~600 launches a day otherwise
         return httpx2.Response(200, json={"data": {"posts": {
             "edges": [{"node": node}], "pageInfo": {"hasNextPage": False, "endCursor": None}}}})  # fmt: skip
 

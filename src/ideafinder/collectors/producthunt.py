@@ -2,7 +2,10 @@
 
 Launches are Market evidence: products that exist. They aren't sent to Signal extraction
 (the prefilter files them as `market`); they feed Competitors. The API is for non-commercial use
-by default, which fits this personal tool. Needs IDEAFINDER_PRODUCTHUNT_TOKEN (create one at
+by default, which fits this personal tool. Only featured launches (the ones Product Hunt picks
+for its homepage) are collected: all launches run to ~600 a day, mostly noise, and the API's
+budget (6,250 complexity points per 15 minutes) covers about 1,200 launches.
+Needs IDEAFINDER_PRODUCTHUNT_TOKEN (create one at
 producthunt.com/v2/oauth/applications).
 """
 
@@ -19,7 +22,7 @@ MAX_PAGES = 200
 
 QUERY = """
 query Launches($after: String, $postedAfter: DateTime, $first: Int!) {
-  posts(order: NEWEST, postedAfter: $postedAfter, after: $after, first: $first) {
+  posts(order: NEWEST, featured: true, postedAfter: $postedAfter, after: $after, first: $first) {
     pageInfo { hasNextPage endCursor }
     edges { node {
       id name tagline description url website votesCount commentsCount createdAt
