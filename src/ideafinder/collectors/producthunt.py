@@ -18,7 +18,7 @@ from ideafinder.collectors.base import Collector, HttpSource, RawItem, SourceGon
 API = "https://api.producthunt.com/v2/api/graphql"
 COMMUNITY = "producthunt"
 PAGE_SIZE = 20
-MAX_PAGES = 200
+MAX_PAGES = 400  # 8,000 featured launches: a 12-month backfill is ~7,800
 
 QUERY = """
 query Launches($after: String, $postedAfter: DateTime, $first: Int!) {
