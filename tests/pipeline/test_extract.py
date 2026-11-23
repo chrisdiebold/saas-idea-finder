@@ -82,3 +82,26 @@ def test_parse_output_validates_against_the_chunk():
     assert signal.problem_statement == "Invoicing takes too long."
     assert signal.persona == "unknown" and signal.intensity == 5
     assert signal.quote_verified and signal.products == ["QuickBooks"]
+
+
+def test_signals_about_the_author_rather_than_a_problem_are_dropped():
+    chunk = Chunk("hackernews", None, [item(10, "I'd happily pay for a better CI service.")])
+
+    def signal(statement: str) -> dict:
+        return {
+            "item": 1, "kind": "payment", "problem_statement": statement, "persona": "dev",
+            "intensity": 3, "quote": "", "workaround": None, "products": [],
+        }  # fmt: skip
+
+    about_people = [
+        "The author is willing to pay for a more reliable CI service.",
+        "Users are willing to pay a premium to avoid unethical AI providers.",
+        "Developers are eager to purchase faster inference.",
+        "The user is not willing to pay for Netflix due to region locks.",
+    ]
+    problems = [
+        "GitHub Actions runs fail often enough to block releases for small teams.",
+        "Users are forced to pay for add-ons to get features that should be native to Jira.",
+    ]
+    kept = parse_output(chunk, {"signals": [signal(s) for s in about_people + problems]})
+    assert [s.problem_statement for s in kept] == problems

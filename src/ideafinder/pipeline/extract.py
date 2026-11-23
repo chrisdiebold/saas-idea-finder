@@ -62,16 +62,24 @@ Signal kinds:
 - pain: the author has a problem or does tedious work they'd like to avoid.
 - request: the author is looking for a tool, feature or product that would solve a problem.
 - complaint: the author is unhappy with an existing product (name it in "products").
-- payment: the author would pay, or already pays, to have the problem solved.
+- payment: the author would pay, or already pays, to have a specific problem solved. The kind
+  records that they'd pay; the problem_statement still describes the problem, never the author.
+  When a problem fits several kinds, choose payment if the author says they'd pay or already
+  pay (including for a workaround), and record the problem once.
 
 Not Signals: "+1"-style agreement with nothing added; announcements of products the author
-built; answers or advice to someone else; jokes; general opinions about the industry; job posts.
+built; answers or advice to someone else; jokes; general opinions about the industry; job posts;
+willingness to pay with no specific problem ("I'd happily pay for good software").
 
 For each Signal:
 - item: the Item's number.
 - problem_statement: one neutral sentence describing the problem, not a solution.
   Good: "Small landscaping companies spend hours turning site photos into written quotes."
   Bad: "Needs an AI quoting app."
+  Never about the author or people's attitudes, preferences or willingness to pay: it should
+  still make sense to someone who doesn't know anyone would pay. For a payment Signal:
+  Good: "GitHub Actions runs fail often enough to block releases for small teams."
+  Bad: "The author is willing to pay for a more reliable CI service."
 - persona: who has the problem, by role and industry, e.g. "office manager at a dental practice"
   or "Jira administrator at a mid-size software company". Use what the Item says; if it says
   nothing, infer the most likely role from context.
@@ -185,6 +193,16 @@ class ParsedSignal:
     products: list[str]
 
 
+# "The author is willing to pay for…", "Users are eager to purchase…": about the person, not a
+# problem. These all look alike to the embedding model and cluster into one junk Idea.
+ABOUT_THE_AUTHOR = re.compile(
+    r"^(the |some |many |most )?(author|user|commenter|poster|customer|consumer|developer|people)s?"
+    r" (is|are|would be|remain)( (still|also|not|very|more|less))? "
+    r"(willing|unwilling|eager|happy|ready|keen|reluctant) to (pay|purchase|buy|spend|subscribe)",
+    re.IGNORECASE,
+)
+
+
 def parse_output(chunk: Chunk, data: dict[str, Any]) -> list[ParsedSignal]:
     """Validate the model's answer against the chunk; drop Signals that don't hold up."""
     parsed = []
@@ -194,6 +212,11 @@ def parse_output(chunk: Chunk, data: dict[str, Any]) -> list[ParsedSignal]:
             log.warning("model referred to Item %r, which isn't in the chunk", number)
             continue
         if raw.get("kind") not in SIGNAL_KINDS or not raw.get("problem_statement", "").strip():
+            continue
+        if ABOUT_THE_AUTHOR.match(raw["problem_statement"].strip()):
+            log.info(
+                "dropped a Signal about the author, not a problem: %s", raw["problem_statement"]
+            )
             continue
         item = chunk.items[number - 1]
         quote = (raw.get("quote") or "").strip()
