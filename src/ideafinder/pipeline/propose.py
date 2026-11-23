@@ -32,18 +32,27 @@ COMPETITORS = 10
 
 SYSTEM = """\
 You help a solo founder triage software business ideas. Each idea is a recurring problem for a
-kind of person (the Persona), backed by evidence collected from the web. Propose ONE outcome:
-- "working": worth researching further (real, recurring pain; people or businesses would pay;
-  buildable by one developer; fits the founder).
-- "archive", with the main reason:
-  - too_competitive: well served by existing products and complaints about them are few
-  - low_willingness_to_pay: people complain but there's little sign anyone would pay
-  - too_big_to_build: needs far more than one developer can build in a few months
-  - not_interested: clearly outside what this founder prefers
+kind of person (the Persona), backed by posts collected from the web. Propose ONE outcome:
+- "working": worth an hour of research. The founder checks competitors, pricing and buyers in
+  a Briefing afterwards, so this doesn't need proof the business works; it needs a specific,
+  recurring problem that one developer could plausibly sell a solution to and that fits the
+  founder.
+- "archive", only when the evidence shows a deal-breaker. The main reason:
+  - too_competitive: existing products already solve this problem well and nobody complains
+    about them. The product the problem happens IN is not a competitor: a gap in Jira,
+    WordPress or Shopify is an opening for an add-on, especially where an app marketplace
+    exists.
+  - low_willingness_to_pay: the people affected show they won't pay (consumers or hobbyists
+    expecting free, complaints about price). Posts rarely mention paying, so "0 about paying"
+    alone is not a reason; businesses losing staff time to a workflow problem often pay.
+  - too_big_to_build: needs far more than one developer can build in a few months, or needs
+    something one developer can't get (a platform's private access, regulation, a big sales team)
+  - not_interested: clearly outside what this founder prefers, or not a software problem
 
 rationale: one sentence a busy person can read in five seconds, naming the deciding evidence.
-confidence: 0.0–1.0. Use 0.8 or more only when the evidence clearly points one way. If the
-evidence is thin or mixed, say so with a lower confidence rather than guessing.
+confidence: how sure you are, 0.0–1.0. Use 0.8 or more only when the evidence clearly points
+one way. With fewer than 10 Signals, or when the call depends on facts not shown (prices,
+competitors, market size), stay at 0.7 or below.
 If the proposal is "working", archive_reason must be "none"."""
 
 SCHEMA = {
