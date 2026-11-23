@@ -80,7 +80,7 @@ sources:
   - key: producthunt
     name: Product Hunt
     phase: 2
-    enabled: false              # needs IDEAFINDER_PRODUCTHUNT_TOKEN; then set to true
+    enabled: true               # needs IDEAFINDER_PRODUCTHUNT_TOKEN
     rate_limit_per_minute: 20   # API: 6,250 complexity points per 15 minutes
     communities: [producthunt]
 
